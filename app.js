@@ -32,10 +32,6 @@ const firebaseConfig = {
   measurementId: "G-ZCYGJWZWDJ"
 };
 
-/* 
-  Add your admin email here.
-  You can add more admin emails inside this list.
-*/
 const adminEmails = [
   "jerodriguez2804@gmail.com",
   "emeza@pcpsystems.com"
@@ -56,7 +52,7 @@ let currentUserName = "";
 
 document.getElementById("signupBtn").addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
-  const email = document.getElementById("email").value.trim();
+  const email = document.getElementById("email").value.trim().toLowerCase();
   const password = document.getElementById("password").value;
 
   if (!name || !email || !password) {
@@ -69,11 +65,18 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     const user = userCredential.user;
 
     await setDoc(doc(db, "employees", user.uid), {
-      name,
-      email,
+      name: name,
+      email: email,
       createdAt: serverTimestamp()
     });
 
+    await setDoc(doc(db, "employeeNames", email), {
+      name: name,
+      email: email,
+      createdAt: serverTimestamp()
+    });
+
+    currentUserName = name;
     alert("Account created!");
   } catch (error) {
     alert(error.message);
@@ -81,7 +84,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
-  const email = document.getElementById("email").value.trim();
+  const email = document.getElementById("email").value.trim().toLowerCase();
   const password = document.getElementById("password").value;
 
   if (!email || !password) {
@@ -108,15 +111,24 @@ document.getElementById("saveNameBtn").addEventListener("click", async () => {
   }
 
   try {
+    const cleanEmail = user.email.toLowerCase();
+
     await setDoc(doc(db, "employees", user.uid), {
       name: newName,
-      email: user.email,
+      email: cleanEmail,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    await setDoc(doc(db, "employeeNames", cleanEmail), {
+      name: newName,
+      email: cleanEmail,
       updatedAt: serverTimestamp()
     }, { merge: true });
 
     currentUserName = newName;
     welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
-    alert("Name updated!");
+
+    alert("Name updated! Load the weekly records again to see the change.");
   } catch (error) {
     alert(error.message);
   }
@@ -143,10 +155,12 @@ document.getElementById("clockInBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
+  const cleanEmail = user.email.toLowerCase();
+
   await addDoc(collection(db, "punches"), {
     employeeId: user.uid,
-    employeeName: currentUserName,
-    employeeEmail: user.email,
+    employeeName: currentUserName || cleanEmail,
+    employeeEmail: cleanEmail,
     type: "Clock In",
     time: serverTimestamp()
   });
@@ -158,10 +172,12 @@ document.getElementById("clockOutBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
+  const cleanEmail = user.email.toLowerCase();
+
   await addDoc(collection(db, "punches"), {
     employeeId: user.uid,
-    employeeName: currentUserName,
-    employeeEmail: user.email,
+    employeeName: currentUserName || cleanEmail,
+    employeeEmail: cleanEmail,
     type: "Clock Out",
     time: serverTimestamp()
   });
@@ -179,105 +195,112 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
     return;
   }
 
-  const employeesSnapshot = await getDocs(collection(db, "employees"));
-  const employeeNamesByEmail = {};
+  try {
+    const namesSnapshot = await getDocs(collection(db, "employeeNames"));
+    const employeeNamesByEmail = {};
 
-  employeesSnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (data.email && data.name) {
-      employeeNamesByEmail[data.email] = data.name;
+    namesSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (data.email && data.name) {
+        employeeNamesByEmail[data.email.toLowerCase()] = data.name;
+      }
+    });
+
+    const q = query(collection(db, "punches"), orderBy("time", "asc"));
+    const snapshot = await getDocs(q);
+
+    const grouped = {};
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (!data.time || !data.employeeEmail) return;
+
+      const dateObj = data.time.toDate();
+      const punchWeek = getWeekValue(dateObj);
+
+      if (punchWeek !== selectedWeek) return;
+
+      const cleanEmail = data.employeeEmail.toLowerCase();
+      const employeeKey = cleanEmail;
+
+      const employeeName =
+        employeeNamesByEmail[cleanEmail] ||
+        data.employeeName ||
+        cleanEmail;
+
+      if (!grouped[employeeKey]) {
+        grouped[employeeKey] = {
+          name: employeeName,
+          days: {
+            Monday: [],
+            Tuesday: [],
+            Wednesday: [],
+            Thursday: [],
+            Friday: [],
+            Saturday: [],
+            Sunday: []
+          },
+          totalMinutes: 0
+        };
+      }
+
+      const dayName = dateObj.toLocaleDateString("en-US", {
+        weekday: "long"
+      });
+
+      const timeText = dateObj.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      grouped[employeeKey].days[dayName].push({
+        type: data.type,
+        time: dateObj,
+        display: `${timeText}<br>${data.type}`
+      });
+    });
+
+    Object.values(grouped).forEach((employee) => {
+      employee.totalMinutes = calculateWeeklyMinutes(employee.days);
+
+      records.innerHTML += `
+        <div class="employee-card">
+          <h3>${employee.name}</h3>
+
+          <table class="week-table">
+            <tr>
+              ${createHeaderCell("Monday")}
+              ${createHeaderCell("Tuesday")}
+              ${createHeaderCell("Wednesday")}
+              ${createHeaderCell("Thursday")}
+              ${createHeaderCell("Friday")}
+              ${createHeaderCell("Saturday")}
+              ${createHeaderCell("Sunday")}
+              <th>Total<br>Hours</th>
+            </tr>
+
+            <tr>
+              ${createDayCell(employee.days.Monday)}
+              ${createDayCell(employee.days.Tuesday)}
+              ${createDayCell(employee.days.Wednesday)}
+              ${createDayCell(employee.days.Thursday)}
+              ${createDayCell(employee.days.Friday)}
+              ${createDayCell(employee.days.Saturday)}
+              ${createDayCell(employee.days.Sunday)}
+              <td class="total-hours">${formatMinutes(employee.totalMinutes)}</td>
+            </tr>
+          </table>
+        </div>
+      `;
+    });
+
+    if (records.innerHTML === "") {
+      records.innerHTML = `<p class="no-records">No records found for this week.</p>`;
     }
-  });
-
-  const q = query(collection(db, "punches"), orderBy("time", "asc"));
-  const snapshot = await getDocs(q);
-
-  const grouped = {};
-
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (!data.time) return;
-
-    const dateObj = data.time.toDate();
-    const punchWeek = getWeekValue(dateObj);
-
-    if (punchWeek !== selectedWeek) return;
-
-    const employeeKey = data.employeeEmail;
-
-    const employeeName =
-      employeeNamesByEmail[data.employeeEmail] ||
-      data.employeeName ||
-      data.employeeEmail;
-
-    if (!grouped[employeeKey]) {
-      grouped[employeeKey] = {
-        name: employeeName,
-        days: {
-          Monday: [],
-          Tuesday: [],
-          Wednesday: [],
-          Thursday: [],
-          Friday: [],
-          Saturday: [],
-          Sunday: []
-        },
-        totalMinutes: 0
-      };
-    }
-
-    const dayName = dateObj.toLocaleDateString("en-US", {
-      weekday: "long"
-    });
-
-    const timeText = dateObj.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-
-    grouped[employeeKey].days[dayName].push({
-      type: data.type,
-      time: dateObj,
-      display: `${timeText}<br>${data.type}`
-    });
-  });
-
-  Object.values(grouped).forEach((employee) => {
-    employee.totalMinutes = calculateWeeklyMinutes(employee.days);
-
-    records.innerHTML += `
-      <div class="employee-card">
-        <h3>${employee.name}</h3>
-
-        <table class="week-table">
-          <tr>
-            ${createHeaderCell("Monday")}
-            ${createHeaderCell("Tuesday")}
-            ${createHeaderCell("Wednesday")}
-            ${createHeaderCell("Thursday")}
-            ${createHeaderCell("Friday")}
-            ${createHeaderCell("Saturday")}
-            ${createHeaderCell("Sunday")}
-            <th>Total<br>Hours</th>
-          </tr>
-
-          <tr>
-            ${createDayCell(employee.days.Monday)}
-            ${createDayCell(employee.days.Tuesday)}
-            ${createDayCell(employee.days.Wednesday)}
-            ${createDayCell(employee.days.Thursday)}
-            ${createDayCell(employee.days.Friday)}
-            ${createDayCell(employee.days.Saturday)}
-            ${createDayCell(employee.days.Sunday)}
-            <td class="total-hours">${formatMinutes(employee.totalMinutes)}</td>
-          </tr>
-        </table>
-      </div>
-    `;
-  });
-
-  if (records.innerHTML === "") {
-    records.innerHTML = `<p class="no-records">No records found for this week.</p>`;
+  } catch (error) {
+    alert(error.message);
   }
 });
 
@@ -359,10 +382,14 @@ onAuthStateChanged(auth, async (user) => {
     authBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
 
+    const cleanEmail = user.email.toLowerCase();
     const employeeDoc = await getDoc(doc(db, "employees", user.uid));
+    const employeeNameDoc = await getDoc(doc(db, "employeeNames", cleanEmail));
 
     if (employeeDoc.exists() && employeeDoc.data().name) {
       currentUserName = employeeDoc.data().name;
+    } else if (employeeNameDoc.exists() && employeeNameDoc.data().name) {
+      currentUserName = employeeNameDoc.data().name;
     } else {
       currentUserName = "";
     }
@@ -375,7 +402,7 @@ onAuthStateChanged(auth, async (user) => {
       welcomeText.innerHTML = `Welcome, <span>Add your name below</span>`;
     }
 
-    if (adminEmails.includes(user.email)) {
+    if (adminEmails.includes(cleanEmail)) {
       adminBox.classList.remove("hidden");
     } else {
       adminBox.classList.add("hidden");
