@@ -402,11 +402,13 @@ onAuthStateChanged(auth, async (user) => {
       welcomeText.innerHTML = `Welcome, <span>Add your name below</span>`;
     }
 
-    if (adminEmails.includes(cleanEmail)) {
-      adminBox.classList.remove("hidden");
-    } else {
-      adminBox.classList.add("hidden");
-    }
+ const cleanAdminEmails = adminEmails.map((email) => email.toLowerCase().trim());
+
+if (cleanAdminEmails.includes(cleanEmail)) {
+  adminBox.classList.remove("hidden");
+} else {
+  adminBox.classList.add("hidden");
+}
   } else {
     authBox.classList.remove("hidden");
     clockBox.classList.add("hidden");
