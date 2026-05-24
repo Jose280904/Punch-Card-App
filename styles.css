@@ -10,9 +10,13 @@ body {
 }
 
 .app {
-  max-width: 600px;
+  max-width: 850px;
   margin: 40px auto;
   padding: 20px;
+}
+
+h1 {
+  text-align: center;
 }
 
 .card {
@@ -32,6 +36,11 @@ button {
   font-size: 16px;
 }
 
+input {
+  background: #f4f4f4;
+  color: #111;
+}
+
 button {
   background: #e74c3c;
   color: white;
@@ -39,17 +48,76 @@ button {
   font-weight: bold;
 }
 
+button:hover {
+  background: #c0392b;
+}
+
 button.secondary {
   background: #555;
+}
+
+button.secondary:hover {
+  background: #444;
 }
 
 .hidden {
   display: none;
 }
 
-.record {
+.employee-card {
   background: #2c3038;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  margin-top: 18px;
+}
+
+.employee-card h3 {
+  margin-bottom: 4px;
+}
+
+.employee-card p {
+  margin-top: 0;
+  color: #c7c7c7;
+}
+
+.week-table {
+  width: 100%;
+  border-collapse: collapse;
   margin-top: 12px;
+}
+
+.week-table th,
+.week-table td {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.week-table th {
+  background: #1a1c20;
+}
+
+.week-table td {
+  background: #202329;
+}
+
+.total-hours {
+  margin-top: 12px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .app {
+    margin: 20px auto;
+    padding: 14px;
+  }
+
+  .week-table th,
+  .week-table td {
+    font-size: 13px;
+    padding: 8px;
+  }
 }

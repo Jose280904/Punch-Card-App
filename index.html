@@ -12,8 +12,11 @@
 
     <section id="authBox" class="card">
       <h2>Login</h2>
+
+      <input id="name" type="text" placeholder="Full Name - only for new account" />
       <input id="email" type="email" placeholder="Email" />
       <input id="password" type="password" placeholder="Password" />
+
       <button id="loginBtn">Login</button>
       <button id="signupBtn">Create Account</button>
     </section>
@@ -27,7 +30,12 @@
 
     <section id="adminBox" class="card hidden">
       <h2>Admin Dashboard</h2>
-      <button id="loadRecordsBtn">Load Punch Records</button>
+
+      <label for="weekPicker">Choose Week:</label>
+      <input id="weekPicker" type="week" />
+
+      <button id="loadRecordsBtn">Load Weekly Records</button>
+
       <div id="records"></div>
     </section>
   </main>
