@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -49,6 +50,7 @@ const clockBox = document.getElementById("clockBox");
 const adminBox = document.getElementById("adminBox");
 const welcomeText = document.getElementById("welcomeText");
 const records = document.getElementById("records");
+const settingsName = document.getElementById("settingsName");
 
 let currentUserName = "";
 
@@ -89,6 +91,45 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+document.getElementById("saveNameBtn").addEventListener("click", async () => {
+  const user = auth.currentUser;
+  const newName = settingsName.value.trim();
+
+  if (!user) return;
+
+  if (!newName) {
+    alert("Enter a name first.");
+    return;
+  }
+
+  try {
+    await setDoc(doc(db, "employees", user.uid), {
+      name: newName,
+      email: user.email,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    currentUserName = newName;
+    welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+    alert("Name updated!");
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+document.getElementById("resetPasswordBtn").addEventListener("click", async () => {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  try {
+    await sendPasswordResetEmail(auth, user.email);
+    alert("Password reset email sent.");
   } catch (error) {
     alert(error.message);
   }
@@ -138,6 +179,16 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
     return;
   }
 
+  const employeesSnapshot = await getDocs(collection(db, "employees"));
+  const employeeNamesByEmail = {};
+
+  employeesSnapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.email && data.name) {
+      employeeNamesByEmail[data.email] = data.name;
+    }
+  });
+
   const q = query(collection(db, "punches"), orderBy("time", "asc"));
   const snapshot = await getDocs(q);
 
@@ -152,8 +203,12 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
 
     if (punchWeek !== selectedWeek) return;
 
-    const employeeKey = data.employeeId || data.employeeEmail;
-    const employeeName = data.employeeName || data.employeeEmail;
+    const employeeKey = data.employeeEmail;
+
+    const employeeName =
+      employeeNamesByEmail[data.employeeEmail] ||
+      data.employeeName ||
+      data.employeeEmail;
 
     if (!grouped[employeeKey]) {
       grouped[employeeKey] = {
@@ -306,13 +361,19 @@ onAuthStateChanged(auth, async (user) => {
 
     const employeeDoc = await getDoc(doc(db, "employees", user.uid));
 
-    if (employeeDoc.exists()) {
+    if (employeeDoc.exists() && employeeDoc.data().name) {
       currentUserName = employeeDoc.data().name;
     } else {
-      currentUserName = user.email;
+      currentUserName = "";
     }
 
-    welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+    settingsName.value = currentUserName;
+
+    if (currentUserName) {
+      welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+    } else {
+      welcomeText.innerHTML = `Welcome, <span>Add your name below</span>`;
+    }
 
     if (adminEmails.includes(user.email)) {
       adminBox.classList.remove("hidden");
