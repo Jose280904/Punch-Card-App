@@ -9,10 +9,12 @@
 <body>
   <button id="settingsIconBtn" class="settings-icon hidden" title="Account Settings">👤</button>
 
+  <header class="site-header">
+    <img src="images/pcps-logo.png" alt="Pacific Critical Power Systems Logo" class="logo" />
+  </header>
+
   <main class="app-layout">
     <section class="left-panel">
-      <h1>Employee Time Clock</h1>
-
       <section id="authBox" class="card">
         <h2>Login</h2>
         <p class="muted">Enter your email and password.</p>
@@ -25,7 +27,7 @@
         </div>
 
         <button id="loginBtn">Login</button>
-        <button id="openSignupBtn" class="secondary">Create Account</button>
+        <button id="openSignupBtn" class="outline-btn">Create Account</button>
       </section>
 
       <section id="signupBox" class="card hidden">
@@ -46,16 +48,19 @@
         </div>
 
         <button id="signupBtn">Create Account</button>
-        <button id="backToLoginBtn" class="secondary">Back to Login</button>
+        <button id="backToLoginBtn" class="outline-btn">Back to Login</button>
       </section>
 
       <section id="clockBox" class="card hidden">
         <h2 id="welcomeText">Welcome</h2>
         <p class="muted">Have a great day!</p>
 
-        <button id="clockInBtn">⏱ Clock In</button>
-        <button id="clockOutBtn">⏱ Clock Out</button>
-        <button id="logoutBtn" class="secondary">↪ Logout</button>
+        <div class="clock-actions">
+          <button id="clockInBtn">⏱ Clock In</button>
+          <button id="clockOutBtn">⏱ Clock Out</button>
+        </div>
+
+        <button id="logoutBtn" class="outline-btn">↪ Logout</button>
       </section>
     </section>
 
@@ -68,7 +73,9 @@
 
       <button id="loadRecordsBtn">Load Weekly Records</button>
 
-      <div id="records"></div>
+      <div id="records">
+        <p class="info-box">No records loaded yet.</p>
+      </div>
 
       <p class="footer-note">All times are local.</p>
     </section>
@@ -83,8 +90,8 @@
 
       <input id="settingsName" type="text" placeholder="Update your full name" />
 
-      <button id="saveNameBtn" class="secondary">Save Name</button>
-      <button id="resetPasswordBtn" class="secondary">Send Password Reset Email</button>
+      <button id="saveNameBtn">Save Name</button>
+      <button id="resetPasswordBtn" class="outline-btn">Send Password Reset Email</button>
     </div>
   </div>
 
