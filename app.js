@@ -382,14 +382,15 @@ onAuthStateChanged(auth, async (user) => {
     authBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
 
-    const cleanEmail = user.email.toLowerCase();
+    const cleanEmail = user.email.toLowerCase().trim();
+
+    console.log("Logged in as:", cleanEmail);
+    console.log("Admin emails:", adminEmails);
+
     const employeeDoc = await getDoc(doc(db, "employees", user.uid));
-    const employeeNameDoc = await getDoc(doc(db, "employeeNames", cleanEmail));
 
     if (employeeDoc.exists() && employeeDoc.data().name) {
       currentUserName = employeeDoc.data().name;
-    } else if (employeeNameDoc.exists() && employeeNameDoc.data().name) {
-      currentUserName = employeeNameDoc.data().name;
     } else {
       currentUserName = "";
     }
@@ -402,13 +403,17 @@ onAuthStateChanged(auth, async (user) => {
       welcomeText.innerHTML = `Welcome, <span>Add your name below</span>`;
     }
 
- const cleanAdminEmails = adminEmails.map((email) => email.toLowerCase().trim());
+    const cleanAdminEmails = adminEmails.map((email) =>
+      email.toLowerCase().trim()
+    );
 
-if (cleanAdminEmails.includes(cleanEmail)) {
-  adminBox.classList.remove("hidden");
-} else {
-  adminBox.classList.add("hidden");
-}
+    if (cleanAdminEmails.includes(cleanEmail)) {
+      console.log("ADMIN DETECTED");
+      adminBox.classList.remove("hidden");
+    } else {
+      console.log("NOT ADMIN");
+      adminBox.classList.add("hidden");
+    }
   } else {
     authBox.classList.remove("hidden");
     clockBox.classList.add("hidden");
