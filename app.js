@@ -314,24 +314,24 @@ document.getElementById("loadMyHistoryBtn").addEventListener("click", async () =
     myHistoryRecords.innerHTML = `
       <table class="my-history-table">
         <tr>
+          ${createHeaderCell("Sunday")}
           ${createHeaderCell("Monday")}
           ${createHeaderCell("Tuesday")}
           ${createHeaderCell("Wednesday")}
           ${createHeaderCell("Thursday")}
           ${createHeaderCell("Friday")}
           ${createHeaderCell("Saturday")}
-          ${createHeaderCell("Sunday")}
           <th>Total<br>Hours</th>
         </tr>
 
         <tr>
+          ${createDayCell(days.Sunday)}
           ${createDayCell(days.Monday)}
           ${createDayCell(days.Tuesday)}
           ${createDayCell(days.Wednesday)}
           ${createDayCell(days.Thursday)}
           ${createDayCell(days.Friday)}
           ${createDayCell(days.Saturday)}
-          ${createDayCell(days.Sunday)}
           <td class="total-hours">${formatMinutes(totalMinutes)}</td>
         </tr>
       </table>
@@ -433,13 +433,13 @@ async function getEmployeeNamesByEmail() {
 
 function emptyWeek() {
   return {
+    Sunday: [],
     Monday: [],
     Tuesday: [],
     Wednesday: [],
     Thursday: [],
     Friday: [],
-    Saturday: [],
-    Sunday: []
+    Saturday: []
   };
 }
 
@@ -467,24 +467,24 @@ function buildWeekTable(employeeName, days, totalMinutes) {
 
       <table class="week-table">
         <tr>
+          ${createHeaderCell("Sunday")}
           ${createHeaderCell("Monday")}
           ${createHeaderCell("Tuesday")}
           ${createHeaderCell("Wednesday")}
           ${createHeaderCell("Thursday")}
           ${createHeaderCell("Friday")}
           ${createHeaderCell("Saturday")}
-          ${createHeaderCell("Sunday")}
           <th>Total<br>Hours</th>
         </tr>
 
         <tr>
+          ${createDayCell(days.Sunday)}
           ${createDayCell(days.Monday)}
           ${createDayCell(days.Tuesday)}
           ${createDayCell(days.Wednesday)}
           ${createDayCell(days.Thursday)}
           ${createDayCell(days.Friday)}
           ${createDayCell(days.Saturday)}
-          ${createDayCell(days.Sunday)}
           <td class="total-hours">${formatMinutes(totalMinutes)}</td>
         </tr>
       </table>
@@ -551,15 +551,17 @@ function getWeekDateRange(weekValue) {
   const year = Number(yearText);
   const week = Number(weekText);
 
-  const janFourth = new Date(year, 0, 4);
-  const janFourthDay = janFourth.getDay() || 7;
+  const janFirst = new Date(year, 0, 1);
+  janFirst.setHours(0, 0, 0, 0);
 
-  const mondayOfWeekOne = new Date(janFourth);
-  mondayOfWeekOne.setDate(janFourth.getDate() - janFourthDay + 1);
-  mondayOfWeekOne.setHours(0, 0, 0, 0);
+  const startOfWeek = new Date(janFirst);
+  startOfWeek.setDate(janFirst.getDate() + (week - 1) * 7);
 
-  const startOfWeek = new Date(mondayOfWeekOne);
-  startOfWeek.setDate(mondayOfWeekOne.getDate() + (week - 1) * 7);
+  while (startOfWeek.getDay() !== 0) {
+    startOfWeek.setDate(startOfWeek.getDate() - 1);
+  }
+
+  startOfWeek.setHours(0, 0, 0, 0);
 
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 7);
@@ -569,23 +571,26 @@ function getWeekDateRange(weekValue) {
 
 function getCurrentWeekValue() {
   const now = new Date();
-  const tempDate = new Date(now.getTime());
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  startOfYear.setHours(0, 0, 0, 0);
 
-  tempDate.setHours(0, 0, 0, 0);
-  tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
+  const currentSunday = new Date(now);
+  currentSunday.setHours(0, 0, 0, 0);
 
-  const week1 = new Date(tempDate.getFullYear(), 0, 4);
+  while (currentSunday.getDay() !== 0) {
+    currentSunday.setDate(currentSunday.getDate() - 1);
+  }
+
+  const firstSunday = new Date(startOfYear);
+
+  while (firstSunday.getDay() !== 0) {
+    firstSunday.setDate(firstSunday.getDate() - 1);
+  }
 
   const weekNumber =
-    1 +
-    Math.round(
-      ((tempDate - week1) / 86400000 -
-        3 +
-        ((week1.getDay() + 6) % 7)) /
-        7
-    );
+    Math.floor((currentSunday - firstSunday) / 604800000) + 1;
 
-  return `${tempDate.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+  return `${now.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
 }
 
 function setCurrentWeek() {
