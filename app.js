@@ -388,7 +388,22 @@ async function getEmployeeNamesByEmail() {
       employeeNamesByEmail[data.email.toLowerCase().trim()] = data.name;
     }
   });
+  
+document.getElementById("forgotPasswordLink").addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim().toLowerCase();
 
+  if (!email) {
+    alert("Enter your email first, then click forgot password.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset email sent.");
+  } catch (error) {
+    alert(error.message);
+  }
+});
   return employeeNamesByEmail;
 }
 

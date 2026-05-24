@@ -343,3 +343,16 @@ button.secondary {
     height: 50px;
   }
 }
+
+.forgot-password {
+  margin-top: 16px;
+  text-align: center;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
