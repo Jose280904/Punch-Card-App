@@ -2,13 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Employee Time Clock</title>
+
+  <title>PCP Timecard</title>
+
   <link rel="stylesheet" href="styles.css" />
-  
-  <link rel="icon" type="image/png" href="images/app-icon.png">
-  <link rel="apple-touch-icon" href="images/app-icon.png">
-  <meta name="theme-color" content="#0057c8">
+
+  <link rel="icon" type="image/png" href="images/app-icon.png?v=2" />
+  <link rel="apple-touch-icon" href="images/app-icon.png?v=2" />
+
+  <meta name="theme-color" content="#0057c8" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PCP Timecard" />
 </head>
 <body>
   <button id="settingsIconBtn" class="settings-icon hidden" title="Account Settings">👤</button>
@@ -57,30 +65,30 @@
       </section>
 
       <section id="clockBox" class="card hidden">
-  <h2 id="welcomeText">Welcome</h2>
-  <p class="muted">Have a great day!</p>
+        <h2 id="welcomeText">Welcome</h2>
+        <p class="muted">Have a great day!</p>
 
-  <div class="clock-actions">
-    <button id="clockInBtn">⏱ Clock In</button>
-    <button id="clockOutBtn">⏱ Clock Out</button>
-  </div>
+        <div class="clock-actions">
+          <button id="clockInBtn">⏱ Clock In</button>
+          <button id="clockOutBtn">⏱ Clock Out</button>
+        </div>
 
-  <button id="logoutBtn" class="outline-btn">↪ Logout</button>
-</section>
+        <button id="logoutBtn" class="outline-btn">↪ Logout</button>
+      </section>
 
-<section id="myHistoryBox" class="card hidden">
-  <h2>My Punch History</h2>
-  <p class="muted">View your own weekly punch records.</p>
+      <section id="myHistoryBox" class="card hidden">
+        <h2>My Punch History</h2>
+        <p class="muted">View your own weekly punch records.</p>
 
-  <label for="myWeekPicker">Choose Week:</label>
-  <input id="myWeekPicker" type="week" />
+        <label for="myWeekPicker">Choose Week:</label>
+        <input id="myWeekPicker" type="week" />
 
-  <button id="loadMyHistoryBtn">Load My History</button>
+        <button id="loadMyHistoryBtn">Load My History</button>
 
-  <div id="myHistoryRecords">
-    <p class="info-box">No history loaded yet.</p>
-  </div>
-</section>
+        <div id="myHistoryRecords">
+          <p class="info-box">No history loaded yet.</p>
+        </div>
+      </section>
     </section>
 
     <section id="adminBox" class="right-panel hidden">
