@@ -47,8 +47,11 @@ const adminBox = document.getElementById("adminBox");
 const welcomeText = document.getElementById("welcomeText");
 const records = document.getElementById("records");
 const settingsName = document.getElementById("settingsName");
+const weekPicker = document.getElementById("weekPicker");
 
 let currentUserName = "";
+
+setCurrentWeek();
 
 document.getElementById("signupBtn").addEventListener("click", async () => {
   const name = document.getElementById("name").value.trim();
@@ -64,17 +67,7 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    await setDoc(doc(db, "employees", user.uid), {
-      name: name,
-      email: email,
-      createdAt: serverTimestamp()
-    });
-
-    await setDoc(doc(db, "employeeNames", email), {
-      name: name,
-      email: email,
-      createdAt: serverTimestamp()
-    });
+    await saveEmployeeName(user.uid, email, name, true);
 
     currentUserName = name;
     alert("Account created!");
@@ -111,24 +104,14 @@ document.getElementById("saveNameBtn").addEventListener("click", async () => {
   }
 
   try {
-    const cleanEmail = user.email.toLowerCase();
+    const cleanEmail = user.email.toLowerCase().trim();
 
-    await setDoc(doc(db, "employees", user.uid), {
-      name: newName,
-      email: cleanEmail,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    await setDoc(doc(db, "employeeNames", cleanEmail), {
-      name: newName,
-      email: cleanEmail,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    await saveEmployeeName(user.uid, cleanEmail, newName, false);
 
     currentUserName = newName;
     welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
 
-    alert("Name updated! Load the weekly records again to see the change.");
+    alert("Name updated!");
   } catch (error) {
     alert(error.message);
   }
@@ -152,43 +135,17 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("clockInBtn").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const cleanEmail = user.email.toLowerCase();
-
-  await addDoc(collection(db, "punches"), {
-    employeeId: user.uid,
-    employeeName: currentUserName || cleanEmail,
-    employeeEmail: cleanEmail,
-    type: "Clock In",
-    time: serverTimestamp()
-  });
-
-  alert("Clocked in!");
+  await savePunch("Clock In");
 });
 
 document.getElementById("clockOutBtn").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const cleanEmail = user.email.toLowerCase();
-
-  await addDoc(collection(db, "punches"), {
-    employeeId: user.uid,
-    employeeName: currentUserName || cleanEmail,
-    employeeEmail: cleanEmail,
-    type: "Clock Out",
-    time: serverTimestamp()
-  });
-
-  alert("Clocked out!");
+  await savePunch("Clock Out");
 });
 
 document.getElementById("loadRecordsBtn").addEventListener("click", async () => {
   records.innerHTML = "";
 
-  const selectedWeek = document.getElementById("weekPicker").value;
+  const selectedWeek = weekPicker.value;
 
   if (!selectedWeek) {
     alert("Please choose a week first.");
@@ -196,16 +153,9 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
   }
 
   try {
-    const namesSnapshot = await getDocs(collection(db, "employeeNames"));
-    const employeeNamesByEmail = {};
+    const { startOfWeek, endOfWeek } = getWeekDateRange(selectedWeek);
 
-    namesSnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-
-      if (data.email && data.name) {
-        employeeNamesByEmail[data.email.toLowerCase()] = data.name;
-      }
-    });
+    const employeeNamesByEmail = await getEmployeeNamesByEmail();
 
     const q = query(collection(db, "punches"), orderBy("time", "asc"));
     const snapshot = await getDocs(q);
@@ -218,11 +168,12 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
       if (!data.time || !data.employeeEmail) return;
 
       const dateObj = data.time.toDate();
-      const punchWeek = getWeekValue(dateObj);
 
-      if (punchWeek !== selectedWeek) return;
+      if (dateObj < startOfWeek || dateObj >= endOfWeek) {
+        return;
+      }
 
-      const cleanEmail = data.employeeEmail.toLowerCase();
+      const cleanEmail = data.employeeEmail.toLowerCase().trim();
       const employeeKey = cleanEmail;
 
       const employeeName =
@@ -241,8 +192,7 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
             Friday: [],
             Saturday: [],
             Sunday: []
-          },
-          totalMinutes: 0
+          }
         };
       }
 
@@ -262,8 +212,15 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
       });
     });
 
-    Object.values(grouped).forEach((employee) => {
-      employee.totalMinutes = calculateWeeklyMinutes(employee.days);
+    const employees = Object.values(grouped);
+
+    if (employees.length === 0) {
+      records.innerHTML = `<p class="no-records">No records found for this week.</p>`;
+      return;
+    }
+
+    employees.forEach((employee) => {
+      const totalMinutes = calculateWeeklyMinutes(employee.days);
 
       records.innerHTML += `
         <div class="employee-card">
@@ -289,20 +246,93 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
               ${createDayCell(employee.days.Friday)}
               ${createDayCell(employee.days.Saturday)}
               ${createDayCell(employee.days.Sunday)}
-              <td class="total-hours">${formatMinutes(employee.totalMinutes)}</td>
+              <td class="total-hours">${formatMinutes(totalMinutes)}</td>
             </tr>
           </table>
         </div>
       `;
     });
-
-    if (records.innerHTML === "") {
-      records.innerHTML = `<p class="no-records">No records found for this week.</p>`;
-    }
   } catch (error) {
     alert(error.message);
   }
 });
+
+async function saveEmployeeName(uid, email, name, isNewAccount) {
+  const cleanEmail = email.toLowerCase().trim();
+
+  const employeeData = {
+    name: name,
+    email: cleanEmail,
+    updatedAt: serverTimestamp()
+  };
+
+  if (isNewAccount) {
+    employeeData.createdAt = serverTimestamp();
+  }
+
+  await setDoc(doc(db, "employees", uid), employeeData, { merge: true });
+
+  await setDoc(doc(db, "employeeNames", cleanEmail), {
+    name: name,
+    email: cleanEmail,
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+}
+
+async function savePunch(type) {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  const cleanEmail = user.email.toLowerCase().trim();
+
+  if (!currentUserName) {
+    currentUserName = await getEmployeeName(user.uid, cleanEmail);
+  }
+
+  await addDoc(collection(db, "punches"), {
+    employeeId: user.uid,
+    employeeName: currentUserName || cleanEmail,
+    employeeEmail: cleanEmail,
+    type: type,
+    time: serverTimestamp()
+  });
+
+  alert(`${type} saved!`);
+}
+
+async function getEmployeeName(uid, email) {
+  const cleanEmail = email.toLowerCase().trim();
+
+  const employeeDoc = await getDoc(doc(db, "employees", uid));
+
+  if (employeeDoc.exists() && employeeDoc.data().name) {
+    return employeeDoc.data().name;
+  }
+
+  const employeeNameDoc = await getDoc(doc(db, "employeeNames", cleanEmail));
+
+  if (employeeNameDoc.exists() && employeeNameDoc.data().name) {
+    return employeeNameDoc.data().name;
+  }
+
+  return "";
+}
+
+async function getEmployeeNamesByEmail() {
+  const namesSnapshot = await getDocs(collection(db, "employeeNames"));
+  const employeeNamesByEmail = {};
+
+  namesSnapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+
+    if (data.email && data.name) {
+      employeeNamesByEmail[data.email.toLowerCase().trim()] = data.name;
+    }
+  });
+
+  return employeeNamesByEmail;
+}
 
 function createHeaderCell(dayName) {
   return `<th>${dayName.slice(0, 3)}</th>`;
@@ -358,8 +388,31 @@ function formatMinutes(minutes) {
   return `${hours}h ${mins}m`;
 }
 
-function getWeekValue(date) {
-  const tempDate = new Date(date.getTime());
+function getWeekDateRange(weekValue) {
+  const [yearText, weekText] = weekValue.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+
+  const janFourth = new Date(year, 0, 4);
+  const janFourthDay = janFourth.getDay() || 7;
+
+  const mondayOfWeekOne = new Date(janFourth);
+  mondayOfWeekOne.setDate(janFourth.getDate() - janFourthDay + 1);
+  mondayOfWeekOne.setHours(0, 0, 0, 0);
+
+  const startOfWeek = new Date(mondayOfWeekOne);
+  startOfWeek.setDate(mondayOfWeekOne.getDate() + (week - 1) * 7);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  return { startOfWeek, endOfWeek };
+}
+
+function getCurrentWeekValue() {
+  const now = new Date();
+  const tempDate = new Date(now.getTime());
+
   tempDate.setHours(0, 0, 0, 0);
   tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
 
@@ -377,6 +430,12 @@ function getWeekValue(date) {
   return `${tempDate.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
 }
 
+function setCurrentWeek() {
+  if (weekPicker) {
+    weekPicker.value = getCurrentWeekValue();
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     authBox.classList.add("hidden");
@@ -384,16 +443,7 @@ onAuthStateChanged(auth, async (user) => {
 
     const cleanEmail = user.email.toLowerCase().trim();
 
-    console.log("Logged in as:", cleanEmail);
-    console.log("Admin emails:", adminEmails);
-
-    const employeeDoc = await getDoc(doc(db, "employees", user.uid));
-
-    if (employeeDoc.exists() && employeeDoc.data().name) {
-      currentUserName = employeeDoc.data().name;
-    } else {
-      currentUserName = "";
-    }
+    currentUserName = await getEmployeeName(user.uid, cleanEmail);
 
     settingsName.value = currentUserName;
 
@@ -408,15 +458,14 @@ onAuthStateChanged(auth, async (user) => {
     );
 
     if (cleanAdminEmails.includes(cleanEmail)) {
-      console.log("ADMIN DETECTED");
       adminBox.classList.remove("hidden");
     } else {
-      console.log("NOT ADMIN");
       adminBox.classList.add("hidden");
     }
   } else {
     authBox.classList.remove("hidden");
     clockBox.classList.add("hidden");
     adminBox.classList.add("hidden");
+    currentUserName = "";
   }
 });
