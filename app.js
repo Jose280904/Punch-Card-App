@@ -21,9 +21,6 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 
-  Replace this section with your Firebase config.
-*/
 const firebaseConfig = {
   apiKey: "AIzaSyBLzh6EHZ8wD6MHDo3jgovMA7CFsUDr7Ww",
   authDomain: "employee-time-clock-f2284.firebaseapp.com",
@@ -70,8 +67,8 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
     const user = userCredential.user;
 
     await setDoc(doc(db, "employees", user.uid), {
-      name: name,
-      email: email,
+      name,
+      email,
       createdAt: serverTimestamp()
     });
 
@@ -103,42 +100,32 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 
 document.getElementById("clockInBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
-
   if (!user) return;
 
-  try {
-    await addDoc(collection(db, "punches"), {
-      employeeId: user.uid,
-      employeeName: currentUserName,
-      employeeEmail: user.email,
-      type: "Clock In",
-      time: serverTimestamp()
-    });
+  await addDoc(collection(db, "punches"), {
+    employeeId: user.uid,
+    employeeName: currentUserName,
+    employeeEmail: user.email,
+    type: "Clock In",
+    time: serverTimestamp()
+  });
 
-    alert("Clocked in!");
-  } catch (error) {
-    alert(error.message);
-  }
+  alert("Clocked in!");
 });
 
 document.getElementById("clockOutBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
-
   if (!user) return;
 
-  try {
-    await addDoc(collection(db, "punches"), {
-      employeeId: user.uid,
-      employeeName: currentUserName,
-      employeeEmail: user.email,
-      type: "Clock Out",
-      time: serverTimestamp()
-    });
+  await addDoc(collection(db, "punches"), {
+    employeeId: user.uid,
+    employeeName: currentUserName,
+    employeeEmail: user.email,
+    type: "Clock Out",
+    time: serverTimestamp()
+  });
 
-    alert("Clocked out!");
-  } catch (error) {
-    alert(error.message);
-  }
+  alert("Clocked out!");
 });
 
 document.getElementById("loadRecordsBtn").addEventListener("click", async () => {
@@ -151,106 +138,110 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
     return;
   }
 
-  try {
-    const q = query(collection(db, "punches"), orderBy("time", "asc"));
-    const snapshot = await getDocs(q);
+  const q = query(collection(db, "punches"), orderBy("time", "asc"));
+  const snapshot = await getDocs(q);
 
-    const grouped = {};
+  const grouped = {};
 
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (!data.time) return;
 
-      if (!data.time) return;
+    const dateObj = data.time.toDate();
+    const punchWeek = getWeekValue(dateObj);
 
-      const dateObj = data.time.toDate();
-      const punchWeek = getWeekValue(dateObj);
+    if (punchWeek !== selectedWeek) return;
 
-      if (punchWeek !== selectedWeek) return;
+    const employeeKey = data.employeeId || data.employeeEmail;
+    const employeeName = data.employeeName || data.employeeEmail;
 
-      const employeeKey = data.employeeEmail;
-
-      if (!grouped[employeeKey]) {
-        grouped[employeeKey] = {
-          name: data.employeeName || data.employeeEmail,
-          email: data.employeeEmail,
-          days: {
-            Monday: [],
-            Tuesday: [],
-            Wednesday: [],
-            Thursday: [],
-            Friday: [],
-            Saturday: [],
-            Sunday: []
-          },
-          totalMinutes: 0
-        };
-      }
-
-      const dayName = dateObj.toLocaleDateString("en-US", {
-        weekday: "long"
-      });
-
-      const timeText = dateObj.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      grouped[employeeKey].days[dayName].push({
-        type: data.type,
-        time: dateObj,
-        display: `${data.type}: ${timeText}`
-      });
-    });
-
-    Object.values(grouped).forEach((employee) => {
-      employee.totalMinutes = calculateWeeklyMinutes(employee.days);
-
-      records.innerHTML += `
-        <div class="employee-card">
-          <h3>${employee.name}</h3>
-          <p>${employee.email}</p>
-
-          <table class="week-table">
-            <tr>
-              <th>Day</th>
-              <th>Punches</th>
-              <th>Daily Hours</th>
-            </tr>
-            ${createDayRow("Monday", employee.days.Monday)}
-            ${createDayRow("Tuesday", employee.days.Tuesday)}
-            ${createDayRow("Wednesday", employee.days.Wednesday)}
-            ${createDayRow("Thursday", employee.days.Thursday)}
-            ${createDayRow("Friday", employee.days.Friday)}
-            ${createDayRow("Saturday", employee.days.Saturday)}
-            ${createDayRow("Sunday", employee.days.Sunday)}
-          </table>
-
-          <p class="total-hours">Weekly Total: ${formatMinutes(employee.totalMinutes)}</p>
-        </div>
-      `;
-    });
-
-    if (records.innerHTML === "") {
-      records.innerHTML = "<p>No records found for this week.</p>";
+    if (!grouped[employeeKey]) {
+      grouped[employeeKey] = {
+        name: employeeName,
+        days: {
+          Monday: [],
+          Tuesday: [],
+          Wednesday: [],
+          Thursday: [],
+          Friday: [],
+          Saturday: [],
+          Sunday: []
+        },
+        totalMinutes: 0
+      };
     }
-  } catch (error) {
-    alert(error.message);
+
+    const dayName = dateObj.toLocaleDateString("en-US", {
+      weekday: "long"
+    });
+
+    const timeText = dateObj.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    grouped[employeeKey].days[dayName].push({
+      type: data.type,
+      time: dateObj,
+      display: `${timeText}<br>${data.type}`
+    });
+  });
+
+  Object.values(grouped).forEach((employee) => {
+    employee.totalMinutes = calculateWeeklyMinutes(employee.days);
+
+    records.innerHTML += `
+      <div class="employee-card">
+        <h3>${employee.name}</h3>
+
+        <table class="week-table">
+          <tr>
+            ${createHeaderCell("Monday")}
+            ${createHeaderCell("Tuesday")}
+            ${createHeaderCell("Wednesday")}
+            ${createHeaderCell("Thursday")}
+            ${createHeaderCell("Friday")}
+            ${createHeaderCell("Saturday")}
+            ${createHeaderCell("Sunday")}
+            <th>Total<br>Hours</th>
+          </tr>
+
+          <tr>
+            ${createDayCell(employee.days.Monday)}
+            ${createDayCell(employee.days.Tuesday)}
+            ${createDayCell(employee.days.Wednesday)}
+            ${createDayCell(employee.days.Thursday)}
+            ${createDayCell(employee.days.Friday)}
+            ${createDayCell(employee.days.Saturday)}
+            ${createDayCell(employee.days.Sunday)}
+            <td class="total-hours">${formatMinutes(employee.totalMinutes)}</td>
+          </tr>
+        </table>
+      </div>
+    `;
+  });
+
+  if (records.innerHTML === "") {
+    records.innerHTML = `<p class="no-records">No records found for this week.</p>`;
   }
 });
 
-function createDayRow(day, punches) {
+function createHeaderCell(dayName) {
+  return `<th>${dayName.slice(0, 3)}</th>`;
+}
+
+function createDayCell(punches) {
   const punchText = punches.length
-    ? punches.map((punch) => punch.display).join("<br>")
-    : "No punches";
+    ? punches.map((punch) => punch.display).join("<br><br>")
+    : "—";
 
   const dailyMinutes = calculateDailyMinutes(punches);
 
   return `
-    <tr>
-      <td>${day}</td>
-      <td>${punchText}</td>
-      <td>${formatMinutes(dailyMinutes)}</td>
-    </tr>
+    <td>
+      ${punchText}
+      <div class="day-total">${formatMinutes(dailyMinutes)}</div>
+    </td>
   `;
 }
 
@@ -264,8 +255,7 @@ function calculateDailyMinutes(punches) {
     }
 
     if (punch.type === "Clock Out" && clockInTime) {
-      const difference = punch.time - clockInTime;
-      totalMinutes += Math.round(difference / 60000);
+      totalMinutes += Math.round((punch.time - clockInTime) / 60000);
       clockInTime = null;
     }
   });
@@ -293,7 +283,6 @@ function formatMinutes(minutes) {
 function getWeekValue(date) {
   const tempDate = new Date(date.getTime());
   tempDate.setHours(0, 0, 0, 0);
-
   tempDate.setDate(tempDate.getDate() + 3 - ((tempDate.getDay() + 6) % 7));
 
   const week1 = new Date(tempDate.getFullYear(), 0, 4);
@@ -323,7 +312,7 @@ onAuthStateChanged(auth, async (user) => {
       currentUserName = user.email;
     }
 
-    welcomeText.textContent = `Welcome, ${currentUserName}`;
+    welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
 
     if (adminEmails.includes(user.email)) {
       adminBox.classList.remove("hidden");
