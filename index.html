@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Time Clock</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <h1>Employee Time Clock</h1>
+
+    <section id="authBox" class="card">
+      <h2>Login</h2>
+      <input id="email" type="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+      <button id="loginBtn">Login</button>
+      <button id="signupBtn">Create Account</button>
+    </section>
+
+    <section id="clockBox" class="card hidden">
+      <h2 id="welcomeText">Welcome</h2>
+      <button id="clockInBtn">Clock In</button>
+      <button id="clockOutBtn">Clock Out</button>
+      <button id="logoutBtn" class="secondary">Logout</button>
+    </section>
+
+    <section id="adminBox" class="card hidden">
+      <h2>Admin Dashboard</h2>
+      <button id="loadRecordsBtn">Load Punch Records</button>
+      <div id="records"></div>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
