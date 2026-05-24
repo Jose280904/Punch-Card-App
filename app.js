@@ -42,24 +42,69 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const authBox = document.getElementById("authBox");
+const signupBox = document.getElementById("signupBox");
 const clockBox = document.getElementById("clockBox");
 const adminBox = document.getElementById("adminBox");
 const welcomeText = document.getElementById("welcomeText");
 const records = document.getElementById("records");
 const settingsName = document.getElementById("settingsName");
 const weekPicker = document.getElementById("weekPicker");
+const settingsIconBtn = document.getElementById("settingsIconBtn");
+const settingsModal = document.getElementById("settingsModal");
 
 let currentUserName = "";
 
 setCurrentWeek();
 
-document.getElementById("signupBtn").addEventListener("click", async () => {
-  const name = document.getElementById("name").value.trim();
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const password = document.getElementById("password").value;
+document.getElementById("showPasswordBtn").addEventListener("click", () => {
+  togglePassword("password", "showPasswordBtn");
+});
 
-  if (!name || !email || !password) {
-    alert("For a new account, enter name, email, and password.");
+document.getElementById("showSignupPasswordBtn").addEventListener("click", () => {
+  togglePassword("signupPassword", "showSignupPasswordBtn");
+});
+
+document.getElementById("showConfirmPasswordBtn").addEventListener("click", () => {
+  togglePassword("confirmPassword", "showConfirmPasswordBtn");
+});
+
+document.getElementById("openSignupBtn").addEventListener("click", () => {
+  authBox.classList.add("hidden");
+  signupBox.classList.remove("hidden");
+});
+
+document.getElementById("backToLoginBtn").addEventListener("click", () => {
+  signupBox.classList.add("hidden");
+  authBox.classList.remove("hidden");
+});
+
+settingsIconBtn.addEventListener("click", () => {
+  settingsModal.classList.remove("hidden");
+});
+
+document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+  settingsModal.classList.add("hidden");
+});
+
+settingsModal.addEventListener("click", (event) => {
+  if (event.target === settingsModal) {
+    settingsModal.classList.add("hidden");
+  }
+});
+
+document.getElementById("signupBtn").addEventListener("click", async () => {
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+  const password = document.getElementById("signupPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if (!name || !email || !password || !confirmPassword) {
+    alert("Enter name, email, password, and confirm password.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match.");
     return;
   }
 
@@ -110,6 +155,7 @@ document.getElementById("saveNameBtn").addEventListener("click", async () => {
 
     currentUserName = newName;
     welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+    settingsModal.classList.add("hidden");
 
     alert("Name updated!");
   } catch (error) {
@@ -154,7 +200,6 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
 
   try {
     const { startOfWeek, endOfWeek } = getWeekDateRange(selectedWeek);
-
     const employeeNamesByEmail = await getEmployeeNamesByEmail();
 
     const q = query(collection(db, "punches"), orderBy("time", "asc"));
@@ -256,6 +301,19 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
     alert(error.message);
   }
 });
+
+function togglePassword(inputId, buttonId) {
+  const input = document.getElementById(inputId);
+  const button = document.getElementById(buttonId);
+
+  if (input.type === "password") {
+    input.type = "text";
+    button.textContent = "Hide";
+  } else {
+    input.type = "password";
+    button.textContent = "Show";
+  }
+}
 
 async function saveEmployeeName(uid, email, name, isNewAccount) {
   const cleanEmail = email.toLowerCase().trim();
@@ -439,18 +497,19 @@ function setCurrentWeek() {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     authBox.classList.add("hidden");
+    signupBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
+    settingsIconBtn.classList.remove("hidden");
 
     const cleanEmail = user.email.toLowerCase().trim();
 
     currentUserName = await getEmployeeName(user.uid, cleanEmail);
-
     settingsName.value = currentUserName;
 
     if (currentUserName) {
       welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
     } else {
-      welcomeText.innerHTML = `Welcome, <span>Add your name below</span>`;
+      welcomeText.innerHTML = `Welcome, <span>Add your name in settings</span>`;
     }
 
     const cleanAdminEmails = adminEmails.map((email) =>
@@ -464,8 +523,11 @@ onAuthStateChanged(auth, async (user) => {
     }
   } else {
     authBox.classList.remove("hidden");
+    signupBox.classList.add("hidden");
     clockBox.classList.add("hidden");
     adminBox.classList.add("hidden");
+    settingsIconBtn.classList.add("hidden");
+    settingsModal.classList.add("hidden");
     currentUserName = "";
   }
 });

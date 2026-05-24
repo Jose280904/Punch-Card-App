@@ -7,20 +7,46 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <button id="settingsIconBtn" class="settings-icon hidden" title="Account Settings">👤</button>
+
   <main class="app-layout">
     <section class="left-panel">
       <h1>Employee Time Clock</h1>
 
       <section id="authBox" class="card">
         <h2>Login</h2>
-        <p class="muted">Create an account once, then log in normally after.</p>
+        <p class="muted">Enter your email and password.</p>
 
-        <input id="name" type="text" placeholder="Full Name - only for new account" />
         <input id="email" type="email" placeholder="Email" />
-        <input id="password" type="password" placeholder="Password" />
+
+        <div class="password-row">
+          <input id="password" type="password" placeholder="Password" />
+          <button id="showPasswordBtn" type="button" class="show-btn">Show</button>
+        </div>
 
         <button id="loginBtn">Login</button>
-        <button id="signupBtn" class="secondary">Create Account</button>
+        <button id="openSignupBtn" class="secondary">Create Account</button>
+      </section>
+
+      <section id="signupBox" class="card hidden">
+        <h2>Create Account</h2>
+        <p class="muted">New users need to enter their name once.</p>
+
+        <input id="signupName" type="text" placeholder="Full Name" />
+        <input id="signupEmail" type="email" placeholder="Email" />
+
+        <div class="password-row">
+          <input id="signupPassword" type="password" placeholder="Password" />
+          <button id="showSignupPasswordBtn" type="button" class="show-btn">Show</button>
+        </div>
+
+        <div class="password-row">
+          <input id="confirmPassword" type="password" placeholder="Confirm Password" />
+          <button id="showConfirmPasswordBtn" type="button" class="show-btn">Show</button>
+        </div>
+
+        <button id="signupBtn">Create Account</button>
+        <button id="backToLoginBtn" class="secondary">Back to Login</button>
       </section>
 
       <section id="clockBox" class="card hidden">
@@ -29,14 +55,6 @@
 
         <button id="clockInBtn">⏱ Clock In</button>
         <button id="clockOutBtn">⏱ Clock Out</button>
-
-        <div class="settings-box">
-          <h3>Account Settings</h3>
-          <input id="settingsName" type="text" placeholder="Update your full name" />
-          <button id="saveNameBtn" class="secondary">Save Name</button>
-          <button id="resetPasswordBtn" class="secondary">Send Password Reset Email</button>
-        </div>
-
         <button id="logoutBtn" class="secondary">↪ Logout</button>
       </section>
     </section>
@@ -55,6 +73,20 @@
       <p class="footer-note">All times are local.</p>
     </section>
   </main>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <button id="closeSettingsBtn" class="close-btn">×</button>
+
+      <h2>Account Settings</h2>
+      <p class="muted">Update your name or reset your password.</p>
+
+      <input id="settingsName" type="text" placeholder="Update your full name" />
+
+      <button id="saveNameBtn" class="secondary">Save Name</button>
+      <button id="resetPasswordBtn" class="secondary">Send Password Reset Email</button>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>
