@@ -356,3 +356,41 @@ button.secondary {
 .forgot-password:hover {
   text-decoration: underline;
 }
+
+.my-history-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #d7e3f3;
+  margin-top: 14px;
+}
+
+.my-history-table th,
+.my-history-table td {
+  border-right: 1px solid #d7e3f3;
+  border-bottom: 1px solid #d7e3f3;
+  padding: 12px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 15px;
+}
+
+.my-history-table th {
+  background: #f0f6ff;
+  color: var(--blue-dark);
+}
+
+.my-history-table td {
+  background: white;
+}
+
+.my-history-table th:last-child,
+.my-history-table td:last-child {
+  border-right: none;
+}
+
+.my-history-table tr:last-child td {
+  border-bottom: none;
+}

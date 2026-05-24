@@ -53,16 +53,30 @@
       </section>
 
       <section id="clockBox" class="card hidden">
-        <h2 id="welcomeText">Welcome</h2>
-        <p class="muted">Have a great day!</p>
+  <h2 id="welcomeText">Welcome</h2>
+  <p class="muted">Have a great day!</p>
 
-        <div class="clock-actions">
-          <button id="clockInBtn">⏱ Clock In</button>
-          <button id="clockOutBtn">⏱ Clock Out</button>
-        </div>
+  <div class="clock-actions">
+    <button id="clockInBtn">⏱ Clock In</button>
+    <button id="clockOutBtn">⏱ Clock Out</button>
+  </div>
 
-        <button id="logoutBtn" class="outline-btn">↪ Logout</button>
-      </section>
+  <button id="logoutBtn" class="outline-btn">↪ Logout</button>
+</section>
+
+<section id="myHistoryBox" class="card hidden">
+  <h2>My Punch History</h2>
+  <p class="muted">View your own weekly punch records.</p>
+
+  <label for="myWeekPicker">Choose Week:</label>
+  <input id="myWeekPicker" type="week" />
+
+  <button id="loadMyHistoryBtn">Load My History</button>
+
+  <div id="myHistoryRecords">
+    <p class="info-box">No history loaded yet.</p>
+  </div>
+</section>
     </section>
 
     <section id="adminBox" class="right-panel hidden">

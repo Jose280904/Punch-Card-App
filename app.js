@@ -51,6 +51,9 @@ const settingsName = document.getElementById("settingsName");
 const weekPicker = document.getElementById("weekPicker");
 const settingsIconBtn = document.getElementById("settingsIconBtn");
 const settingsModal = document.getElementById("settingsModal");
+const myHistoryBox = document.getElementById("myHistoryBox");
+const myWeekPicker = document.getElementById("myWeekPicker");
+const myHistoryRecords = document.getElementById("myHistoryRecords");
 
 let currentUserName = "";
 
@@ -76,6 +79,22 @@ document.getElementById("openSignupBtn").addEventListener("click", () => {
 document.getElementById("backToLoginBtn").addEventListener("click", () => {
   signupBox.classList.add("hidden");
   authBox.classList.remove("hidden");
+});
+
+document.getElementById("forgotPasswordLink").addEventListener("click", async () => {
+  const email = document.getElementById("email").value.trim().toLowerCase();
+
+  if (!email) {
+    alert("Enter your email first, then click forgot password.");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert("Password reset email sent.");
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 settingsIconBtn.addEventListener("click", () => {
@@ -214,9 +233,7 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
 
       const dateObj = data.time.toDate();
 
-      if (dateObj < startOfWeek || dateObj >= endOfWeek) {
-        return;
-      }
+      if (dateObj < startOfWeek || dateObj >= endOfWeek) return;
 
       const cleanEmail = data.employeeEmail.toLowerCase().trim();
       const employeeKey = cleanEmail;
@@ -229,32 +246,11 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
       if (!grouped[employeeKey]) {
         grouped[employeeKey] = {
           name: employeeName,
-          days: {
-            Monday: [],
-            Tuesday: [],
-            Wednesday: [],
-            Thursday: [],
-            Friday: [],
-            Saturday: [],
-            Sunday: []
-          }
+          days: emptyWeek()
         };
       }
 
-      const dayName = dateObj.toLocaleDateString("en-US", {
-        weekday: "long"
-      });
-
-      const timeText = dateObj.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      grouped[employeeKey].days[dayName].push({
-        type: data.type,
-        time: dateObj,
-        display: `${timeText}<br>${data.type}`
-      });
+      addPunchToDay(grouped[employeeKey].days, data, dateObj);
     });
 
     const employees = Object.values(grouped);
@@ -267,36 +263,79 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
     employees.forEach((employee) => {
       const totalMinutes = calculateWeeklyMinutes(employee.days);
 
-      records.innerHTML += `
-        <div class="employee-card">
-          <h3>${employee.name}</h3>
-
-          <table class="week-table">
-            <tr>
-              ${createHeaderCell("Monday")}
-              ${createHeaderCell("Tuesday")}
-              ${createHeaderCell("Wednesday")}
-              ${createHeaderCell("Thursday")}
-              ${createHeaderCell("Friday")}
-              ${createHeaderCell("Saturday")}
-              ${createHeaderCell("Sunday")}
-              <th>Total<br>Hours</th>
-            </tr>
-
-            <tr>
-              ${createDayCell(employee.days.Monday)}
-              ${createDayCell(employee.days.Tuesday)}
-              ${createDayCell(employee.days.Wednesday)}
-              ${createDayCell(employee.days.Thursday)}
-              ${createDayCell(employee.days.Friday)}
-              ${createDayCell(employee.days.Saturday)}
-              ${createDayCell(employee.days.Sunday)}
-              <td class="total-hours">${formatMinutes(totalMinutes)}</td>
-            </tr>
-          </table>
-        </div>
-      `;
+      records.innerHTML += buildWeekTable(employee.name, employee.days, totalMinutes);
     });
+  } catch (error) {
+    alert(error.message);
+  }
+});
+
+document.getElementById("loadMyHistoryBtn").addEventListener("click", async () => {
+  myHistoryRecords.innerHTML = "";
+
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  const selectedWeek = myWeekPicker.value;
+
+  if (!selectedWeek) {
+    alert("Please choose a week first.");
+    return;
+  }
+
+  try {
+    const cleanEmail = user.email.toLowerCase().trim();
+    const { startOfWeek, endOfWeek } = getWeekDateRange(selectedWeek);
+
+    const q = query(collection(db, "punches"), orderBy("time", "asc"));
+    const snapshot = await getDocs(q);
+
+    const days = emptyWeek();
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (!data.time || !data.employeeEmail) return;
+
+      const punchEmail = data.employeeEmail.toLowerCase().trim();
+
+      if (punchEmail !== cleanEmail) return;
+
+      const dateObj = data.time.toDate();
+
+      if (dateObj < startOfWeek || dateObj >= endOfWeek) return;
+
+      addPunchToDay(days, data, dateObj);
+    });
+
+    const totalMinutes = calculateWeeklyMinutes(days);
+
+    myHistoryRecords.innerHTML = `
+      <table class="my-history-table">
+        <tr>
+          ${createHeaderCell("Monday")}
+          ${createHeaderCell("Tuesday")}
+          ${createHeaderCell("Wednesday")}
+          ${createHeaderCell("Thursday")}
+          ${createHeaderCell("Friday")}
+          ${createHeaderCell("Saturday")}
+          ${createHeaderCell("Sunday")}
+          <th>Total<br>Hours</th>
+        </tr>
+
+        <tr>
+          ${createDayCell(days.Monday)}
+          ${createDayCell(days.Tuesday)}
+          ${createDayCell(days.Wednesday)}
+          ${createDayCell(days.Thursday)}
+          ${createDayCell(days.Friday)}
+          ${createDayCell(days.Saturday)}
+          ${createDayCell(days.Sunday)}
+          <td class="total-hours">${formatMinutes(totalMinutes)}</td>
+        </tr>
+      </table>
+    `;
   } catch (error) {
     alert(error.message);
   }
@@ -388,23 +427,69 @@ async function getEmployeeNamesByEmail() {
       employeeNamesByEmail[data.email.toLowerCase().trim()] = data.name;
     }
   });
-  
-document.getElementById("forgotPasswordLink").addEventListener("click", async () => {
-  const email = document.getElementById("email").value.trim().toLowerCase();
 
-  if (!email) {
-    alert("Enter your email first, then click forgot password.");
-    return;
-  }
-
-  try {
-    await sendPasswordResetEmail(auth, email);
-    alert("Password reset email sent.");
-  } catch (error) {
-    alert(error.message);
-  }
-});
   return employeeNamesByEmail;
+}
+
+function emptyWeek() {
+  return {
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+    Saturday: [],
+    Sunday: []
+  };
+}
+
+function addPunchToDay(days, data, dateObj) {
+  const dayName = dateObj.toLocaleDateString("en-US", {
+    weekday: "long"
+  });
+
+  const timeText = dateObj.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  days[dayName].push({
+    type: data.type,
+    time: dateObj,
+    display: `${timeText}<br>${data.type}`
+  });
+}
+
+function buildWeekTable(employeeName, days, totalMinutes) {
+  return `
+    <div class="employee-card">
+      <h3>${employeeName}</h3>
+
+      <table class="week-table">
+        <tr>
+          ${createHeaderCell("Monday")}
+          ${createHeaderCell("Tuesday")}
+          ${createHeaderCell("Wednesday")}
+          ${createHeaderCell("Thursday")}
+          ${createHeaderCell("Friday")}
+          ${createHeaderCell("Saturday")}
+          ${createHeaderCell("Sunday")}
+          <th>Total<br>Hours</th>
+        </tr>
+
+        <tr>
+          ${createDayCell(days.Monday)}
+          ${createDayCell(days.Tuesday)}
+          ${createDayCell(days.Wednesday)}
+          ${createDayCell(days.Thursday)}
+          ${createDayCell(days.Friday)}
+          ${createDayCell(days.Saturday)}
+          ${createDayCell(days.Sunday)}
+          <td class="total-hours">${formatMinutes(totalMinutes)}</td>
+        </tr>
+      </table>
+    </div>
+  `;
 }
 
 function createHeaderCell(dayName) {
@@ -504,8 +589,14 @@ function getCurrentWeekValue() {
 }
 
 function setCurrentWeek() {
+  const currentWeek = getCurrentWeekValue();
+
   if (weekPicker) {
-    weekPicker.value = getCurrentWeekValue();
+    weekPicker.value = currentWeek;
+  }
+
+  if (myWeekPicker) {
+    myWeekPicker.value = currentWeek;
   }
 }
 
@@ -514,6 +605,7 @@ onAuthStateChanged(auth, async (user) => {
     authBox.classList.add("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
+    myHistoryBox.classList.remove("hidden");
     settingsIconBtn.classList.remove("hidden");
 
     const cleanEmail = user.email.toLowerCase().trim();
@@ -540,6 +632,7 @@ onAuthStateChanged(auth, async (user) => {
     authBox.classList.remove("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.add("hidden");
+    myHistoryBox.classList.add("hidden");
     adminBox.classList.add("hidden");
     settingsIconBtn.classList.add("hidden");
     settingsModal.classList.add("hidden");
