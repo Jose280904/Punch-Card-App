@@ -81,6 +81,7 @@ body::before {
 
 .card {
   padding: 28px;
+  margin-bottom: 20px;
 }
 
 h1,
@@ -107,22 +108,34 @@ label {
 }
 
 input,
-button {
+button,
+select,
+textarea {
   width: 100%;
   padding: 16px;
   margin-top: 14px;
   border-radius: 9px;
   font-size: 16px;
+  font-family: Arial, sans-serif;
 }
 
-input {
+input,
+select,
+textarea {
   background: white;
   color: var(--text);
   border: 1px solid #cfd9e8;
   outline: none;
 }
 
-input:focus {
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(0, 87, 200, 0.12);
 }
@@ -144,6 +157,16 @@ button.secondary {
   background: white;
   color: var(--blue);
   border: 2px solid var(--blue);
+}
+
+.danger-btn {
+  background: #fff;
+  color: #b42318;
+  border: 2px solid #b42318;
+}
+
+.approve-btn {
+  background: linear-gradient(135deg, #16803c, #1fa650);
 }
 
 .hidden {
@@ -223,7 +246,9 @@ button.secondary {
   color: var(--blue);
 }
 
-#records {
+#records,
+#timeEditRequests,
+#myTimeEditRequests {
   margin-top: 20px;
 }
 
@@ -236,7 +261,8 @@ button.secondary {
   border: 1px solid rgba(0, 87, 200, 0.12);
 }
 
-.employee-card {
+.employee-card,
+.request-card {
   background: white;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -245,10 +271,52 @@ button.secondary {
   box-shadow: 0 10px 26px rgba(0, 61, 140, 0.08);
 }
 
-.employee-card h3 {
+.employee-card h3,
+.request-card h3 {
   font-size: 22px;
   margin-bottom: 12px;
   color: var(--blue);
+}
+
+.request-card p {
+  margin-bottom: 8px;
+}
+
+.request-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #7a5a00;
+}
+
+.status-approved {
+  background: #d1f7df;
+  color: #136c34;
+}
+
+.status-rejected {
+  background: #fde2e2;
+  color: #9f1c1c;
+}
+
+.admin-request-section {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid #d7e3f3;
 }
 
 .week-table {
@@ -312,38 +380,6 @@ button.secondary {
   color: var(--blue);
 }
 
-@media (max-width: 900px) {
-  .site-header {
-    padding-top: 22px;
-  }
-
-  .app-layout {
-    grid-template-columns: 1fr;
-    gap: 22px;
-  }
-
-  .left-panel {
-    min-height: auto;
-  }
-
-  .clock-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .week-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .settings-icon {
-    top: 14px;
-    right: 14px;
-    width: 50px;
-    height: 50px;
-  }
-}
-
 .forgot-password {
   margin-top: 16px;
   text-align: center;
@@ -393,4 +429,38 @@ button.secondary {
 
 .my-history-table tr:last-child td {
   border-bottom: none;
+}
+
+@media (max-width: 900px) {
+  .site-header {
+    padding-top: 22px;
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .left-panel {
+    min-height: auto;
+  }
+
+  .clock-actions,
+  .request-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .week-table,
+  .my-history-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .settings-icon {
+    top: 14px;
+    right: 14px;
+    width: 50px;
+    height: 50px;
+  }
 }

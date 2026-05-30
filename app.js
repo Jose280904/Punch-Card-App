@@ -19,7 +19,8 @@ import {
   getDoc,
   query,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -55,9 +56,18 @@ const myHistoryBox = document.getElementById("myHistoryBox");
 const myWeekPicker = document.getElementById("myWeekPicker");
 const myHistoryRecords = document.getElementById("myHistoryRecords");
 
+const timeEditBox = document.getElementById("timeEditBox");
+const editDate = document.getElementById("editDate");
+const editTime = document.getElementById("editTime");
+const editType = document.getElementById("editType");
+const editReason = document.getElementById("editReason");
+const myTimeEditRequests = document.getElementById("myTimeEditRequests");
+const timeEditRequests = document.getElementById("timeEditRequests");
+
 let currentUserName = "";
 
 setCurrentWeek();
+setTodayDate();
 
 document.getElementById("showPasswordBtn").addEventListener("click", () => {
   togglePassword("password", "showPasswordBtn");
@@ -173,7 +183,7 @@ document.getElementById("saveNameBtn").addEventListener("click", async () => {
     await saveEmployeeName(user.uid, cleanEmail, newName, false);
 
     currentUserName = newName;
-    welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+    welcomeText.innerHTML = `Welcome, <span>${escapeHTML(currentUserName)}</span>`;
     settingsModal.classList.add("hidden");
 
     alert("Name updated!");
@@ -207,7 +217,36 @@ document.getElementById("clockOutBtn").addEventListener("click", async () => {
   await savePunch("Clock Out");
 });
 
+document.getElementById("submitTimeEditBtn").addEventListener("click", async () => {
+  await submitTimeEditRequest();
+});
+
+document.getElementById("loadTimeEditRequestsBtn").addEventListener("click", async () => {
+  await loadPendingTimeEditRequests();
+});
+
+timeEditRequests.addEventListener("click", async (event) => {
+  const approveBtn = event.target.closest(".approve-request-btn");
+  const rejectBtn = event.target.closest(".reject-request-btn");
+
+  if (approveBtn) {
+    await approveTimeEditRequest(approveBtn.dataset.id);
+  }
+
+  if (rejectBtn) {
+    await rejectTimeEditRequest(rejectBtn.dataset.id);
+  }
+});
+
 document.getElementById("loadRecordsBtn").addEventListener("click", async () => {
+  await loadWeeklyRecords();
+});
+
+document.getElementById("loadMyHistoryBtn").addEventListener("click", async () => {
+  await loadMyHistory();
+});
+
+async function loadWeeklyRecords() {
   records.innerHTML = "";
 
   const selectedWeek = weekPicker.value;
@@ -268,9 +307,9 @@ document.getElementById("loadRecordsBtn").addEventListener("click", async () => 
   } catch (error) {
     alert(error.message);
   }
-});
+}
 
-document.getElementById("loadMyHistoryBtn").addEventListener("click", async () => {
+async function loadMyHistory() {
   myHistoryRecords.innerHTML = "";
 
   const user = auth.currentUser;
@@ -339,7 +378,222 @@ document.getElementById("loadMyHistoryBtn").addEventListener("click", async () =
   } catch (error) {
     alert(error.message);
   }
-});
+}
+
+async function submitTimeEditRequest() {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  const dateValue = editDate.value;
+  const timeValue = editTime.value;
+  const typeValue = editType.value;
+  const reasonValue = editReason.value.trim();
+
+  if (!dateValue || !timeValue || !typeValue || !reasonValue) {
+    alert("Please enter the date, time, punch type, and reason.");
+    return;
+  }
+
+  const requestedDateTime = new Date(`${dateValue}T${timeValue}`);
+
+  if (Number.isNaN(requestedDateTime.getTime())) {
+    alert("Please enter a valid date and time.");
+    return;
+  }
+
+  try {
+    const cleanEmail = user.email.toLowerCase().trim();
+
+    if (!currentUserName) {
+      currentUserName = await getEmployeeName(user.uid, cleanEmail);
+    }
+
+    await addDoc(collection(db, "timeEditRequests"), {
+      employeeId: user.uid,
+      employeeName: currentUserName || cleanEmail,
+      employeeEmail: cleanEmail,
+      requestedType: typeValue,
+      requestedDate: dateValue,
+      requestedTime: timeValue,
+      requestedDateTime: requestedDateTime,
+      reason: reasonValue,
+      status: "Pending",
+      requestedAt: serverTimestamp()
+    });
+
+    editReason.value = "";
+    alert("Time edit request submitted for admin approval.");
+
+    await loadMyTimeEditRequests();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function loadMyTimeEditRequests() {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  try {
+    const cleanEmail = user.email.toLowerCase().trim();
+    const q = query(collection(db, "timeEditRequests"), orderBy("requestedAt", "desc"));
+    const snapshot = await getDocs(q);
+
+    let html = "";
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (!data.employeeEmail) return;
+
+      if (data.employeeEmail.toLowerCase().trim() !== cleanEmail) return;
+
+      html += buildMyRequestCard(data);
+    });
+
+    myTimeEditRequests.innerHTML = html || `<p class="info-box">No time edit requests found.</p>`;
+  } catch (error) {
+    myTimeEditRequests.innerHTML = `<p class="info-box">Unable to load time edit requests.</p>`;
+  }
+}
+
+async function loadPendingTimeEditRequests() {
+  try {
+    const q = query(collection(db, "timeEditRequests"), orderBy("requestedAt", "desc"));
+    const snapshot = await getDocs(q);
+
+    let html = "";
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (data.status !== "Pending") return;
+
+      html += buildAdminRequestCard(docSnap.id, data);
+    });
+
+    timeEditRequests.innerHTML = html || `<p class="info-box">No pending time edit requests.</p>`;
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function approveTimeEditRequest(requestId) {
+  const adminUser = auth.currentUser;
+
+  if (!adminUser) return;
+
+  const confirmApprove = confirm("Approve this time edit request and add it to the employee punch records?");
+
+  if (!confirmApprove) return;
+
+  try {
+    const requestRef = doc(db, "timeEditRequests", requestId);
+    const requestSnap = await getDoc(requestRef);
+
+    if (!requestSnap.exists()) {
+      alert("Request not found.");
+      return;
+    }
+
+    const requestData = requestSnap.data();
+
+    if (requestData.status !== "Pending") {
+      alert("This request has already been handled.");
+      return;
+    }
+
+    const approvedDateTime = requestData.requestedDateTime.toDate
+      ? requestData.requestedDateTime.toDate()
+      : new Date(requestData.requestedDateTime);
+
+    await addDoc(collection(db, "punches"), {
+      employeeId: requestData.employeeId,
+      employeeName: requestData.employeeName,
+      employeeEmail: requestData.employeeEmail,
+      type: requestData.requestedType,
+      time: approvedDateTime,
+      source: "Admin Approved Time Edit",
+      timeEditRequestId: requestId,
+      approvedBy: adminUser.email.toLowerCase().trim(),
+      approvedAt: serverTimestamp()
+    });
+
+    await updateDoc(requestRef, {
+      status: "Approved",
+      reviewedBy: adminUser.email.toLowerCase().trim(),
+      reviewedAt: serverTimestamp()
+    });
+
+    alert("Time edit approved and added to punch records.");
+
+    await loadPendingTimeEditRequests();
+    await loadWeeklyRecords();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function rejectTimeEditRequest(requestId) {
+  const adminUser = auth.currentUser;
+
+  if (!adminUser) return;
+
+  const confirmReject = confirm("Reject this time edit request?");
+
+  if (!confirmReject) return;
+
+  try {
+    const requestRef = doc(db, "timeEditRequests", requestId);
+
+    await updateDoc(requestRef, {
+      status: "Rejected",
+      reviewedBy: adminUser.email.toLowerCase().trim(),
+      reviewedAt: serverTimestamp()
+    });
+
+    alert("Time edit request rejected.");
+
+    await loadPendingTimeEditRequests();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function buildMyRequestCard(data) {
+  const statusClass = getStatusClass(data.status);
+
+  return `
+    <div class="request-card">
+      <h3>${escapeHTML(data.requestedType)}</h3>
+      <p><strong>Date:</strong> ${escapeHTML(data.requestedDate)}</p>
+      <p><strong>Time:</strong> ${formatTimeFrom24Hour(data.requestedTime)}</p>
+      <p><strong>Reason:</strong> ${escapeHTML(data.reason)}</p>
+      <span class="status-pill ${statusClass}">${escapeHTML(data.status)}</span>
+    </div>
+  `;
+}
+
+function buildAdminRequestCard(requestId, data) {
+  return `
+    <div class="request-card">
+      <h3>${escapeHTML(data.employeeName || data.employeeEmail)}</h3>
+      <p><strong>Email:</strong> ${escapeHTML(data.employeeEmail)}</p>
+      <p><strong>Requested Punch:</strong> ${escapeHTML(data.requestedType)}</p>
+      <p><strong>Date:</strong> ${escapeHTML(data.requestedDate)}</p>
+      <p><strong>Time:</strong> ${formatTimeFrom24Hour(data.requestedTime)}</p>
+      <p><strong>Reason:</strong> ${escapeHTML(data.reason)}</p>
+      <span class="status-pill status-pending">Pending</span>
+
+      <div class="request-actions">
+        <button class="approve-btn approve-request-btn" data-id="${requestId}">Approve</button>
+        <button class="danger-btn reject-request-btn" data-id="${requestId}">Reject</button>
+      </div>
+    </div>
+  `;
+}
 
 function togglePassword(inputId, buttonId) {
   const input = document.getElementById(inputId);
@@ -392,7 +646,8 @@ async function savePunch(type) {
     employeeName: currentUserName || cleanEmail,
     employeeEmail: cleanEmail,
     type: type,
-    time: serverTimestamp()
+    time: serverTimestamp(),
+    source: "Employee Clock Button"
   });
 
   alert(`${type} saved!`);
@@ -453,17 +708,21 @@ function addPunchToDay(days, data, dateObj) {
     minute: "2-digit"
   });
 
+  const sourceText = data.source === "Admin Approved Time Edit"
+    ? "<br><small>Admin Edit</small>"
+    : "";
+
   days[dayName].push({
     type: data.type,
     time: dateObj,
-    display: `${timeText}<br>${data.type}`
+    display: `${timeText}<br>${escapeHTML(data.type)}${sourceText}`
   });
 }
 
 function buildWeekTable(employeeName, days, totalMinutes) {
   return `
     <div class="employee-card">
-      <h3>${employeeName}</h3>
+      <h3>${escapeHTML(employeeName)}</h3>
 
       <table class="week-table">
         <tr>
@@ -605,12 +864,53 @@ function setCurrentWeek() {
   }
 }
 
+function setTodayDate() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+
+  if (editDate) {
+    editDate.value = `${yyyy}-${mm}-${dd}`;
+  }
+}
+
+function formatTimeFrom24Hour(timeValue) {
+  if (!timeValue) return "";
+
+  const [hoursText, minutesText] = timeValue.split(":");
+  const date = new Date();
+
+  date.setHours(Number(hoursText), Number(minutesText), 0, 0);
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getStatusClass(status) {
+  if (status === "Approved") return "status-approved";
+  if (status === "Rejected") return "status-rejected";
+  return "status-pending";
+}
+
+function escapeHTML(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     authBox.classList.add("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
     myHistoryBox.classList.remove("hidden");
+    timeEditBox.classList.remove("hidden");
     settingsIconBtn.classList.remove("hidden");
 
     const cleanEmail = user.email.toLowerCase().trim();
@@ -619,7 +919,7 @@ onAuthStateChanged(auth, async (user) => {
     settingsName.value = currentUserName;
 
     if (currentUserName) {
-      welcomeText.innerHTML = `Welcome, <span>${currentUserName}</span>`;
+      welcomeText.innerHTML = `Welcome, <span>${escapeHTML(currentUserName)}</span>`;
     } else {
       welcomeText.innerHTML = `Welcome, <span>Add your name in settings</span>`;
     }
@@ -630,14 +930,18 @@ onAuthStateChanged(auth, async (user) => {
 
     if (cleanAdminEmails.includes(cleanEmail)) {
       adminBox.classList.remove("hidden");
+      await loadPendingTimeEditRequests();
     } else {
       adminBox.classList.add("hidden");
     }
+
+    await loadMyTimeEditRequests();
   } else {
     authBox.classList.remove("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.add("hidden");
     myHistoryBox.classList.add("hidden");
+    timeEditBox.classList.add("hidden");
     adminBox.classList.add("hidden");
     settingsIconBtn.classList.add("hidden");
     settingsModal.classList.add("hidden");

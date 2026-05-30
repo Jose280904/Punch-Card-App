@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>PCP Timecard</title>
@@ -18,6 +17,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="PCP Timecard" />
 </head>
+
 <body>
   <button id="settingsIconBtn" class="settings-icon hidden" title="Account Settings">👤</button>
 
@@ -76,6 +76,32 @@
         <button id="logoutBtn" class="outline-btn">↪ Logout</button>
       </section>
 
+      <section id="timeEditBox" class="card hidden">
+        <h2>Time Edit Request</h2>
+        <p class="muted">Forgot to clock in or out? Submit a request for admin approval.</p>
+
+        <label for="editDate">Date:</label>
+        <input id="editDate" type="date" />
+
+        <label for="editTime">Time:</label>
+        <input id="editTime" type="time" />
+
+        <label for="editType">Punch Type:</label>
+        <select id="editType">
+          <option value="Clock In">Clock In</option>
+          <option value="Clock Out">Clock Out</option>
+        </select>
+
+        <label for="editReason">Reason:</label>
+        <textarea id="editReason" placeholder="Example: I forgot to clock in when I arrived onsite."></textarea>
+
+        <button id="submitTimeEditBtn">Submit Request</button>
+
+        <div id="myTimeEditRequests">
+          <p class="info-box">No time edit requests loaded yet.</p>
+        </div>
+      </section>
+
       <section id="myHistoryBox" class="card hidden">
         <h2>My Punch History</h2>
         <p class="muted">View your own weekly punch records.</p>
@@ -103,6 +129,17 @@
       <div id="records">
         <p class="info-box">No records loaded yet.</p>
       </div>
+
+      <section class="admin-request-section">
+        <h2>Time Edit Approvals</h2>
+        <p class="muted">Approve or reject employee time edit requests.</p>
+
+        <button id="loadTimeEditRequestsBtn">Load Pending Requests</button>
+
+        <div id="timeEditRequests">
+          <p class="info-box">No pending requests loaded yet.</p>
+        </div>
+      </section>
 
       <p class="footer-note">All times are local.</p>
     </section>
