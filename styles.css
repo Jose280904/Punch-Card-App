@@ -344,6 +344,19 @@ button.secondary {
   font-weight: bold;
 }
 
+.week-table th div {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.week-table th small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
 .week-table td {
   background: white;
 }
@@ -416,6 +429,19 @@ button.secondary {
 .my-history-table th {
   background: #f0f6ff;
   color: var(--blue-dark);
+}
+
+.my-history-table th div {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.my-history-table th small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
 }
 
 .my-history-table td {
