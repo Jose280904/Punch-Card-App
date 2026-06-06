@@ -69,8 +69,8 @@
         <p class="muted">Have a great day!</p>
 
         <div class="clock-actions">
-          <button id="clockInBtn">⏱ Clock In</button>
-          <button id="clockOutBtn">⏱ Clock Out</button>
+          <button id="clockInBtn">⏱ Punch In</button>
+          <button id="clockOutBtn">⏱ Punch Out</button>
         </div>
 
         <button id="logoutBtn" class="outline-btn">↪ Logout</button>
@@ -78,7 +78,7 @@
 
       <section id="timeEditBox" class="card hidden">
         <h2>Time Edit Request</h2>
-        <p class="muted">Forgot to clock in or out? Submit a request for admin approval.</p>
+        <p class="muted">Forgot to punch in or out? Submit a request for admin approval.</p>
 
         <label for="editDate">Date:</label>
         <input id="editDate" type="date" />
@@ -88,12 +88,14 @@
 
         <label for="editType">Punch Type:</label>
         <select id="editType">
-          <option value="Clock In">Clock In</option>
-          <option value="Clock Out">Clock Out</option>
+          <option value="Punch In">Punch In</option>
+          <option value="Lunch Out">Lunch Out</option>
+          <option value="Lunch In">Lunch In</option>
+          <option value="Punch Out">Punch Out</option>
         </select>
 
         <label for="editReason">Reason:</label>
-        <textarea id="editReason" placeholder="Example: I forgot to clock in when I arrived onsite."></textarea>
+        <textarea id="editReason" placeholder="Example: I forgot to punch in when I arrived onsite."></textarea>
 
         <button id="submitTimeEditBtn">Submit Request</button>
 

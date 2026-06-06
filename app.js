@@ -211,11 +211,11 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
 });
 
 document.getElementById("clockInBtn").addEventListener("click", async () => {
-  await savePunch("Clock In");
+  await savePunch("Punch In");
 });
 
 document.getElementById("clockOutBtn").addEventListener("click", async () => {
-  await savePunch("Clock Out");
+  await savePunch("Punch Out");
 });
 
 document.getElementById("submitTimeEditBtn").addEventListener("click", async () => {
@@ -277,21 +277,20 @@ async function loadWeeklyRecords() {
       if (dateObj < startOfWeek || dateObj >= endOfWeek) return;
 
       const cleanEmail = data.employeeEmail.toLowerCase().trim();
-      const employeeKey = cleanEmail;
 
       const employeeName =
         employeeNamesByEmail[cleanEmail] ||
         data.employeeName ||
         cleanEmail;
 
-      if (!grouped[employeeKey]) {
-        grouped[employeeKey] = {
+      if (!grouped[cleanEmail]) {
+        grouped[cleanEmail] = {
           name: employeeName,
           days: emptyWeek()
         };
       }
 
-      addPunchToDay(grouped[employeeKey].days, data, dateObj);
+      addPunchToDay(grouped[cleanEmail].days, data, dateObj);
     });
 
     const employees = Object.values(grouped);
@@ -655,7 +654,7 @@ async function savePunch(type) {
     employeeEmail: cleanEmail,
     type: type,
     time: serverTimestamp(),
-    source: "Employee Clock Button"
+    source: "Employee Punch Button"
   });
 
   alert(`${type} saved!`);
@@ -783,20 +782,36 @@ function createDayCell(punches) {
   `;
 }
 
+function isWorkStart(type) {
+  return (
+    type === "Punch In" ||
+    type === "Clock In" ||
+    type === "Lunch In"
+  );
+}
+
+function isWorkStop(type) {
+  return (
+    type === "Punch Out" ||
+    type === "Clock Out" ||
+    type === "Lunch Out"
+  );
+}
+
 function calculateDailyMinutes(punches) {
   let totalMinutes = 0;
-  let clockInTime = null;
+  let activeStartTime = null;
 
   const sortedPunches = [...punches].sort((a, b) => a.time - b.time);
 
   sortedPunches.forEach((punch) => {
-    if (punch.type === "Clock In") {
-      clockInTime = punch.time;
+    if (isWorkStart(punch.type)) {
+      activeStartTime = punch.time;
     }
 
-    if (punch.type === "Clock Out" && clockInTime) {
-      totalMinutes += Math.round((punch.time - clockInTime) / 60000);
-      clockInTime = null;
+    if (isWorkStop(punch.type) && activeStartTime) {
+      totalMinutes += Math.round((punch.time - activeStartTime) / 60000);
+      activeStartTime = null;
     }
   });
 
