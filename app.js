@@ -786,7 +786,8 @@ function isWorkStart(type) {
   return (
     type === "Punch In" ||
     type === "Clock In" ||
-    type === "Lunch In"
+    type === "Lunch In" ||
+    type === "End Lunch"
   );
 }
 
@@ -794,7 +795,8 @@ function isWorkStop(type) {
   return (
     type === "Punch Out" ||
     type === "Clock Out" ||
-    type === "Lunch Out"
+    type === "Lunch Out" ||
+    type === "Start Lunch"
   );
 }
 
