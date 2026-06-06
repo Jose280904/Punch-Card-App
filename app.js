@@ -955,6 +955,8 @@ function escapeHTML(value) {
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    document.body.classList.remove("auth-view");
+
     authBox.classList.add("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.remove("hidden");
@@ -986,6 +988,8 @@ onAuthStateChanged(auth, async (user) => {
 
     await loadMyTimeEditRequests();
   } else {
+    document.body.classList.add("auth-view");
+
     authBox.classList.remove("hidden");
     signupBox.classList.add("hidden");
     clockBox.classList.add("hidden");

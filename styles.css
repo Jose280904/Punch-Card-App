@@ -521,3 +521,30 @@ button.secondary {
 #myTimeEditRequests::-webkit-scrollbar-thumb:hover {
   background: #003f9e;
 }
+
+/* Center login screen like Fastech */
+body.auth-view .app-layout {
+  min-height: calc(100vh - 260px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 10px;
+}
+
+body.auth-view .left-panel {
+  width: min(700px, 92vw);
+  min-height: auto;
+}
+
+body.auth-view .card {
+  margin-bottom: 0;
+}
+
+body.auth-view .site-header {
+  padding-top: 30px;
+  padding-bottom: 10px;
+}
+
+body.auth-view .logo {
+  width: min(560px, 82vw);
+}
