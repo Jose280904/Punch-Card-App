@@ -548,3 +548,63 @@ body.auth-view .site-header {
 body.auth-view .logo {
   width: min(560px, 82vw);
 }
+
+.admin-edit-icon {
+  position: fixed;
+  top: 92px;
+  right: 28px;
+  width: 90px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  border-radius: 999px;
+  font-size: 14px;
+  z-index: 50;
+  background: white;
+  color: var(--blue);
+  border: 2px solid rgba(0, 87, 200, 0.25);
+  box-shadow: 0 10px 24px rgba(0, 61, 140, 0.18);
+}
+
+.wide-modal {
+  width: min(900px, 100%);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.admin-punch-row {
+  background: white;
+  border: 1px solid #d7e3f3;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+.admin-punch-row p {
+  margin: 5px 0;
+}
+
+.admin-punch-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.edit-small-btn {
+  background: linear-gradient(135deg, var(--blue), #006cff);
+}
+
+@media (max-width: 900px) {
+  .admin-edit-icon {
+    top: 72px;
+    right: 14px;
+    width: 82px;
+    height: 40px;
+    font-size: 13px;
+  }
+
+  .admin-punch-actions {
+    grid-template-columns: 1fr;
+  }
+}

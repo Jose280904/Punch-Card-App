@@ -65,6 +65,21 @@ const editReason = document.getElementById("editReason");
 const myTimeEditRequests = document.getElementById("myTimeEditRequests");
 const timeEditRequests = document.getElementById("timeEditRequests");
 
+const adminPunchEditorBtn = document.getElementById("adminPunchEditorBtn");
+const adminPunchModal = document.getElementById("adminPunchModal");
+const closeAdminPunchBtn = document.getElementById("closeAdminPunchBtn");
+const adminEditWeekPicker = document.getElementById("adminEditWeekPicker");
+const loadAdminPunchesBtn = document.getElementById("loadAdminPunchesBtn");
+const adminPunchEditorRecords = document.getElementById("adminPunchEditorRecords");
+
+const editPunchModal = document.getElementById("editPunchModal");
+const closeEditPunchBtn = document.getElementById("closeEditPunchBtn");
+const editingPunchId = document.getElementById("editingPunchId");
+const adminEditPunchDate = document.getElementById("adminEditPunchDate");
+const adminEditPunchTime = document.getElementById("adminEditPunchTime");
+const adminEditPunchType = document.getElementById("adminEditPunchType");
+const saveEditedPunchBtn = document.getElementById("saveEditedPunchBtn");
+
 let currentUserName = "";
 
 setCurrentWeek();
@@ -121,6 +136,68 @@ settingsModal.addEventListener("click", (event) => {
     settingsModal.classList.add("hidden");
   }
 });
+
+if (adminPunchEditorBtn) {
+  adminPunchEditorBtn.addEventListener("click", () => {
+    adminPunchModal.classList.remove("hidden");
+    adminEditWeekPicker.value = weekPicker.value || getCurrentWeekValue();
+  });
+}
+
+if (closeAdminPunchBtn) {
+  closeAdminPunchBtn.addEventListener("click", () => {
+    adminPunchModal.classList.add("hidden");
+  });
+}
+
+if (adminPunchModal) {
+  adminPunchModal.addEventListener("click", (event) => {
+    if (event.target === adminPunchModal) {
+      adminPunchModal.classList.add("hidden");
+    }
+  });
+}
+
+if (closeEditPunchBtn) {
+  closeEditPunchBtn.addEventListener("click", () => {
+    editPunchModal.classList.add("hidden");
+  });
+}
+
+if (editPunchModal) {
+  editPunchModal.addEventListener("click", (event) => {
+    if (event.target === editPunchModal) {
+      editPunchModal.classList.add("hidden");
+    }
+  });
+}
+
+if (loadAdminPunchesBtn) {
+  loadAdminPunchesBtn.addEventListener("click", async () => {
+    await loadAdminPunchEditor();
+  });
+}
+
+if (adminPunchEditorRecords) {
+  adminPunchEditorRecords.addEventListener("click", async (event) => {
+    const editBtn = event.target.closest(".admin-edit-punch-btn");
+    const deleteBtn = event.target.closest(".admin-delete-punch-btn");
+
+    if (editBtn) {
+      openEditPunchModal(editBtn);
+    }
+
+    if (deleteBtn) {
+      await softDeletePunch(deleteBtn.dataset.id);
+    }
+  });
+}
+
+if (saveEditedPunchBtn) {
+  saveEditedPunchBtn.addEventListener("click", async () => {
+    await saveEditedPunch();
+  });
+}
 
 document.getElementById("signupBtn").addEventListener("click", async () => {
   const name = document.getElementById("signupName").value.trim();
@@ -214,6 +291,14 @@ document.getElementById("clockInBtn").addEventListener("click", async () => {
   await savePunch("Punch In");
 });
 
+document.getElementById("lunchOutBtn").addEventListener("click", async () => {
+  await savePunch("Start Lunch");
+});
+
+document.getElementById("lunchInBtn").addEventListener("click", async () => {
+  await savePunch("End Lunch");
+});
+
 document.getElementById("clockOutBtn").addEventListener("click", async () => {
   await savePunch("Punch Out");
 });
@@ -270,6 +355,7 @@ async function loadWeeklyRecords() {
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
 
+      if (data.deleted === true) return;
       if (!data.time || !data.employeeEmail) return;
 
       const dateObj = data.time.toDate();
@@ -342,6 +428,7 @@ async function loadMyHistory() {
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
 
+      if (data.deleted === true) return;
       if (!data.time || !data.employeeEmail) return;
 
       const punchEmail = data.employeeEmail.toLowerCase().trim();
@@ -382,6 +469,199 @@ async function loadMyHistory() {
         </tr>
       </table>
     `;
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function loadAdminPunchEditor() {
+  adminPunchEditorRecords.innerHTML = "";
+
+  const selectedWeek = adminEditWeekPicker.value;
+
+  if (!selectedWeek) {
+    alert("Please choose a week first.");
+    return;
+  }
+
+  try {
+    const { startOfWeek, endOfWeek } = getWeekDateRange(selectedWeek);
+    const employeeNamesByEmail = await getEmployeeNamesByEmail();
+
+    const q = query(collection(db, "punches"), orderBy("time", "asc"));
+    const snapshot = await getDocs(q);
+
+    let html = "";
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (data.deleted === true) return;
+      if (!data.time || !data.employeeEmail) return;
+
+      const dateObj = data.time.toDate();
+
+      if (dateObj < startOfWeek || dateObj >= endOfWeek) return;
+
+      const cleanEmail = data.employeeEmail.toLowerCase().trim();
+
+      const employeeName =
+        employeeNamesByEmail[cleanEmail] ||
+        data.employeeName ||
+        cleanEmail;
+
+      html += buildAdminPunchRow(docSnap.id, data, employeeName, dateObj);
+    });
+
+    adminPunchEditorRecords.innerHTML =
+      html || `<p class="info-box">No punches found for this week.</p>`;
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function buildAdminPunchRow(punchId, data, employeeName, dateObj) {
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const hours = String(dateObj.getHours()).padStart(2, "0");
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+
+  const dateValue = `${yyyy}-${mm}-${dd}`;
+  const timeValue = `${hours}:${minutes}`;
+
+  const displayTime = dateObj.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `
+    <div class="admin-punch-row">
+      <p><strong>Employee:</strong> ${escapeHTML(employeeName)}</p>
+      <p><strong>Email:</strong> ${escapeHTML(data.employeeEmail)}</p>
+      <p><strong>Punch:</strong> ${escapeHTML(data.type)}</p>
+      <p><strong>Time:</strong> ${escapeHTML(displayTime)}</p>
+
+      <div class="admin-punch-actions">
+        <button
+          class="edit-small-btn admin-edit-punch-btn"
+          data-id="${escapeHTML(punchId)}"
+          data-date="${escapeHTML(dateValue)}"
+          data-time="${escapeHTML(timeValue)}"
+          data-type="${escapeHTML(data.type)}"
+        >
+          Edit
+        </button>
+
+        <button
+          class="danger-btn admin-delete-punch-btn"
+          data-id="${escapeHTML(punchId)}"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function openEditPunchModal(button) {
+  editingPunchId.value = button.dataset.id;
+  adminEditPunchDate.value = button.dataset.date;
+  adminEditPunchTime.value = button.dataset.time;
+  adminEditPunchType.value = button.dataset.type;
+
+  editPunchModal.classList.remove("hidden");
+}
+
+async function saveEditedPunch() {
+  const adminUser = auth.currentUser;
+
+  if (!adminUser) return;
+
+  const punchId = editingPunchId.value;
+  const dateValue = adminEditPunchDate.value;
+  const timeValue = adminEditPunchTime.value;
+  const typeValue = adminEditPunchType.value;
+
+  if (!punchId || !dateValue || !timeValue || !typeValue) {
+    alert("Please enter date, time, and punch type.");
+    return;
+  }
+
+  const newDateTime = new Date(`${dateValue}T${timeValue}`);
+
+  if (Number.isNaN(newDateTime.getTime())) {
+    alert("Please enter a valid date and time.");
+    return;
+  }
+
+  const confirmEdit = confirm("Save changes to this employee punch?");
+
+  if (!confirmEdit) return;
+
+  try {
+    const punchRef = doc(db, "punches", punchId);
+
+    await updateDoc(punchRef, {
+      type: typeValue,
+      time: newDateTime,
+      source: "Admin Modified Punch",
+      editedBy: adminUser.email.toLowerCase().trim(),
+      editedAt: serverTimestamp()
+    });
+
+    alert("Punch updated.");
+
+    editPunchModal.classList.add("hidden");
+
+    await loadAdminPunchEditor();
+
+    if (weekPicker.value) {
+      await loadWeeklyRecords();
+    }
+
+    if (myWeekPicker.value) {
+      await loadMyHistory();
+    }
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function softDeletePunch(punchId) {
+  const adminUser = auth.currentUser;
+
+  if (!adminUser) return;
+
+  const confirmDelete = confirm(
+    "Are you sure you want to delete this punch? It will disappear from records, but it will still be saved in Firebase as deleted."
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const punchRef = doc(db, "punches", punchId);
+
+    await updateDoc(punchRef, {
+      deleted: true,
+      deletedBy: adminUser.email.toLowerCase().trim(),
+      deletedAt: serverTimestamp()
+    });
+
+    alert("Punch deleted.");
+
+    await loadAdminPunchEditor();
+
+    if (weekPicker.value) {
+      await loadWeeklyRecords();
+    }
+
+    if (myWeekPicker.value) {
+      await loadMyHistory();
+    }
   } catch (error) {
     alert(error.message);
   }
@@ -654,7 +934,8 @@ async function savePunch(type) {
     employeeEmail: cleanEmail,
     type: type,
     time: serverTimestamp(),
-    source: "Employee Punch Button"
+    source: "Employee Punch Button",
+    deleted: false
   });
 
   alert(`${type} saved!`);
@@ -715,9 +996,11 @@ function addPunchToDay(days, data, dateObj) {
     minute: "2-digit"
   });
 
-  const sourceText = data.source === "Admin Approved Time Edit"
-    ? "<br><small>Admin Edit</small>"
-    : "";
+  const sourceText =
+    data.source === "Admin Approved Time Edit" ||
+    data.source === "Admin Modified Punch"
+      ? "<br><small>Admin Edit</small>"
+      : "";
 
   days[dayName].push({
     type: data.type,
@@ -911,6 +1194,10 @@ function setCurrentWeek() {
   if (myWeekPicker) {
     myWeekPicker.value = currentWeek;
   }
+
+  if (adminEditWeekPicker) {
+    adminEditWeekPicker.value = currentWeek;
+  }
 }
 
 function setTodayDate() {
@@ -981,9 +1268,18 @@ onAuthStateChanged(auth, async (user) => {
 
     if (cleanAdminEmails.includes(cleanEmail)) {
       adminBox.classList.remove("hidden");
+
+      if (adminPunchEditorBtn) {
+        adminPunchEditorBtn.classList.remove("hidden");
+      }
+
       await loadPendingTimeEditRequests();
     } else {
       adminBox.classList.add("hidden");
+
+      if (adminPunchEditorBtn) {
+        adminPunchEditorBtn.classList.add("hidden");
+      }
     }
 
     await loadMyTimeEditRequests();
@@ -998,6 +1294,19 @@ onAuthStateChanged(auth, async (user) => {
     adminBox.classList.add("hidden");
     settingsIconBtn.classList.add("hidden");
     settingsModal.classList.add("hidden");
+
+    if (adminPunchEditorBtn) {
+      adminPunchEditorBtn.classList.add("hidden");
+    }
+
+    if (adminPunchModal) {
+      adminPunchModal.classList.add("hidden");
+    }
+
+    if (editPunchModal) {
+      editPunchModal.classList.add("hidden");
+    }
+
     currentUserName = "";
   }
 });

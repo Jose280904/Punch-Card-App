@@ -20,6 +20,7 @@
 
 <body>
   <button id="settingsIconBtn" class="settings-icon hidden" title="Account Settings">👤</button>
+  <button id="adminPunchEditorBtn" class="admin-edit-icon hidden" title="Edit Employee Punches">✏️ Edit</button>
 
   <header class="site-header">
     <img src="images/pcps-logo.png" alt="Pacific Critical Power Systems Logo" class="logo" />
@@ -69,10 +70,10 @@
         <p class="muted">Have a great day!</p>
 
         <div class="clock-actions">
-           <button id="clockInBtn">⏱ Punch In</button>
-           <button id="lunchOutBtn">🍔 Start Lunch</button>
-           <button id="lunchInBtn">🍔 End Lunch</button>
-           <button id="clockOutBtn">⏱ Punch Out</button>
+          <button id="clockInBtn">⏱ Punch In</button>
+          <button id="lunchOutBtn">🍔 Start Lunch</button>
+          <button id="lunchInBtn">🍔 End Lunch</button>
+          <button id="clockOutBtn">⏱ Punch Out</button>
         </div>
 
         <button id="logoutBtn" class="outline-btn">↪ Logout</button>
@@ -160,6 +161,51 @@
 
       <button id="saveNameBtn">Save Name</button>
       <button id="resetPasswordBtn" class="outline-btn">Send Password Reset Email</button>
+    </div>
+  </div>
+
+  <div id="adminPunchModal" class="modal hidden">
+    <div class="modal-card wide-modal">
+      <button id="closeAdminPunchBtn" class="close-btn">×</button>
+
+      <h2>Edit Employee Punches</h2>
+      <p class="muted">Choose a week, then edit or delete employee punches.</p>
+
+      <label for="adminEditWeekPicker">Choose Week:</label>
+      <input id="adminEditWeekPicker" type="week" />
+
+      <button id="loadAdminPunchesBtn">Load Punches</button>
+
+      <div id="adminPunchEditorRecords">
+        <p class="info-box">No punches loaded yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="editPunchModal" class="modal hidden">
+    <div class="modal-card">
+      <button id="closeEditPunchBtn" class="close-btn">×</button>
+
+      <h2>Edit Punch</h2>
+      <p class="muted">Modify the employee punch below.</p>
+
+      <input id="editingPunchId" type="hidden" />
+
+      <label for="adminEditPunchDate">Date:</label>
+      <input id="adminEditPunchDate" type="date" />
+
+      <label for="adminEditPunchTime">Time:</label>
+      <input id="adminEditPunchTime" type="time" />
+
+      <label for="adminEditPunchType">Punch Type:</label>
+      <select id="adminEditPunchType">
+        <option value="Punch In">Punch In</option>
+        <option value="Start Lunch">Start Lunch</option>
+        <option value="End Lunch">End Lunch</option>
+        <option value="Punch Out">Punch Out</option>
+      </select>
+
+      <button id="saveEditedPunchBtn">Save Changes</button>
     </div>
   </div>
 
