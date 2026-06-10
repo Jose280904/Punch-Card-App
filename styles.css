@@ -60,6 +60,28 @@ body::before {
   gap: 26px;
 }
 
+/* Centers employee UI after login */
+body.employee-view .app-layout {
+  width: min(1000px, 100%);
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+body.employee-view .left-panel,
+body.employee-view .right-panel,
+body.employee-view .card {
+  width: min(850px, 100%);
+}
+
+body.employee-view .right-panel {
+  display: grid;
+  justify-items: center;
+}
+
+body.employee-view .right-panel > * {
+  width: min(850px, 100%);
+}
+
 .left-panel,
 .right-panel,
 .card {
@@ -77,6 +99,10 @@ body::before {
 
 .left-panel {
   min-height: 620px;
+}
+
+body.employee-view .left-panel {
+  min-height: auto;
 }
 
 .card {
@@ -457,40 +483,6 @@ button.secondary {
   border-bottom: none;
 }
 
-@media (max-width: 900px) {
-  .site-header {
-    padding-top: 22px;
-  }
-
-  .app-layout {
-    grid-template-columns: 1fr;
-    gap: 22px;
-  }
-
-  .left-panel {
-    min-height: auto;
-  }
-
-  .clock-actions,
-  .request-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .week-table,
-  .my-history-table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .settings-icon {
-    top: 14px;
-    right: 14px;
-    width: 50px;
-    height: 50px;
-  }
-}
-
 #myTimeEditRequests {
   max-height: 350px;
   overflow-y: auto;
@@ -499,7 +491,6 @@ button.secondary {
   border-top: 1px solid #d7e3f3;
 }
 
-/* Blue PCP scrollbar */
 #myTimeEditRequests::-webkit-scrollbar {
   width: 10px;
 }
@@ -510,11 +501,7 @@ button.secondary {
 }
 
 #myTimeEditRequests::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #4bb3e8,
-    #0057c8
-  );
+  background: linear-gradient(180deg, #4bb3e8, #0057c8);
   border-radius: 999px;
 }
 
@@ -596,6 +583,39 @@ body.auth-view .logo {
 }
 
 @media (max-width: 900px) {
+  .site-header {
+    padding-top: 22px;
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .left-panel {
+    min-height: auto;
+  }
+
+  .clock-actions,
+  .request-actions,
+  .admin-punch-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .week-table,
+  .my-history-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .settings-icon {
+    top: 14px;
+    right: 14px;
+    width: 50px;
+    height: 50px;
+  }
+
   .admin-edit-icon {
     top: 72px;
     right: 14px;
@@ -604,7 +624,7 @@ body.auth-view .logo {
     font-size: 13px;
   }
 
-  .admin-punch-actions {
-    grid-template-columns: 1fr;
+  body.employee-view .app-layout {
+    width: min(920px, 100%);
   }
 }
