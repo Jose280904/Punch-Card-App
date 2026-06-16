@@ -36,7 +36,8 @@ const firebaseConfig = {
 const adminEmails = [
   "jerodriguez2804@gmail.com",
   "emeza@pcpsystems.com",
-  "dmeza@pcpsystems.com"
+  "dmeza@pcpsystems.com",
+  "miranda@pcpsystems.com"
 ];
 
 const app = initializeApp(firebaseConfig);
