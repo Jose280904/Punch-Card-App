@@ -246,11 +246,15 @@
           <h2>Schedule Builder</h2>
           <p class="muted">Select an employee and week. Existing shifts will show on each day to prevent double scheduling.</p>
 
-          <label for="scheduleEmployeeEmail">Employee Email:</label>
-          <input id="scheduleEmployeeEmail" type="email" placeholder="employee@email.com" />
+          <label for="scheduleEmployeeSelect">Employee:</label>
+          <select id="scheduleEmployeeSelect">
+          <option value="">Select an employee</option>
+          </select>
 
-          <label for="scheduleEmployeeName">Employee Name:</label>
-          <input id="scheduleEmployeeName" type="text" placeholder="Employee Name" />
+         <div id="selectedEmployeeInfo" class="info-box hidden">
+           <strong>Selected Employee:</strong>
+            <span id="selectedEmployeeNameText">None</span>
+          </div>
 
           <label for="adminScheduleBuilderWeekPicker">Choose Week:</label>
           <input id="adminScheduleBuilderWeekPicker" type="week" />
