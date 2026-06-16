@@ -8,20 +8,16 @@
   --blue-light: #4bb3e8;
   --navy: #062b5f;
   --navy-soft: #0b3f86;
-
   --green: #16803c;
   --yellow: #d99a00;
   --red: #b42318;
-
   --gray: #6f7378;
   --medium-gray: #9ca3af;
   --silver: #d8dadd;
   --light-silver: #f2f3f5;
-
   --white: #ffffff;
   --text: #1f2a3d;
   --muted: #5d6b82;
-
   --card: rgba(255, 255, 255, 0.96);
   --border: rgba(0, 87, 200, 0.18);
   --shadow: 0 18px 45px rgba(0, 61, 140, 0.16);
@@ -262,6 +258,11 @@ textarea {
   outline: none;
 }
 
+select {
+  cursor: pointer;
+  appearance: auto;
+}
+
 textarea {
   min-height: 110px;
   resize: vertical;
@@ -275,7 +276,6 @@ textarea:focus {
 }
 
 button {
-  border: none;
   background: linear-gradient(135deg, var(--blue-dark), var(--blue));
   color: var(--white);
   font-weight: bold;
@@ -290,6 +290,7 @@ button:hover {
 button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+  filter: grayscale(0.2);
 }
 
 .outline-btn,
@@ -352,12 +353,29 @@ button.secondary {
 .status-card,
 .profile-info-box,
 .selected-day-details,
-.schedule-form-box {
+.schedule-form-box,
+#selectedEmployeeInfo {
   margin-top: 20px;
   padding: 20px;
   background: #f6faff;
   border: 1px solid var(--border);
   border-radius: 16px;
+}
+
+#selectedEmployeeInfo {
+  background: #eef6ff;
+  border-left: 5px solid var(--blue);
+}
+
+#selectedEmployeeInfo strong {
+  color: var(--blue-dark);
+}
+
+#selectedEmployeeNameText {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--text);
+  font-weight: bold;
 }
 
 .status-label {
@@ -596,9 +614,15 @@ button.secondary {
 
 .schedule-week-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
   gap: 12px;
   margin-top: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.schedule-week-grid .info-box {
+  grid-column: 1 / -1;
 }
 
 .schedule-day-btn {
@@ -901,9 +925,12 @@ button.secondary {
   .clock-actions,
   .request-actions,
   .admin-punch-actions,
-  .calendar-controls,
-  .schedule-week-grid {
+  .calendar-controls {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-week-grid {
+    grid-template-columns: repeat(7, minmax(115px, 1fr));
   }
 
   .employee-week-grid {
@@ -937,5 +964,9 @@ button.secondary {
 
   .schedule-day-btn {
     min-height: 125px;
+  }
+
+  #selectedEmployeeInfo {
+    padding: 16px;
   }
 }
