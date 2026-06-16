@@ -95,6 +95,11 @@ const selectedScheduleDayTitle = $("selectedScheduleDayTitle");
 const scheduleBuilderWeekTotal = $("scheduleBuilderWeekTotal");
 const scheduleBuilderTotalHours = $("scheduleBuilderTotalHours");
 
+const scheduleEmployeeSelect = $("scheduleEmployeeSelect");
+const selectedEmployeeInfo = $("selectedEmployeeInfo");
+const selectedEmployeeNameText = $("selectedEmployeeNameText");
+
+// Backward-compatible fallback only. These can be removed from index.html after switching to the dropdown.
 const scheduleEmployeeEmail = $("scheduleEmployeeEmail");
 const scheduleEmployeeName = $("scheduleEmployeeName");
 const scheduleDate = $("scheduleDate");
@@ -224,6 +229,7 @@ document.querySelectorAll(".menu-link").forEach((button) => {
     if (button.dataset.page === "timeEditPage") await loadMyTimeEditRequests();
     if (button.dataset.page === "historyPage") await loadMyHistory();
     if (button.dataset.page === "signaturePage") await checkWeeklySignature();
+    if (button.dataset.page === "adminScheduleBuilderPage") await loadScheduleEmployeeDropdown();
     if (button.dataset.page === "adminPostedSchedulesPage") await loadAdminSchedules();
     if (button.dataset.page === "adminTimeOffPage") await loadPendingTimeOffRequests();
     if (button.dataset.page === "adminTimeEditPage") await loadPendingTimeEditRequests();
@@ -284,6 +290,24 @@ $("submitTimeOffBtn").addEventListener("click", submitTimeOffRequest);
 $("loadTimeOffRequestsBtn").addEventListener("click", loadPendingTimeOffRequests);
 
 submitSignatureBtn.addEventListener("click", submitWeeklySignature);
+
+if (scheduleEmployeeSelect) {
+  scheduleEmployeeSelect.addEventListener("change", () => {
+    const employee = getSelectedScheduleEmployee();
+
+    if (!employee) {
+      if (selectedEmployeeInfo) selectedEmployeeInfo.classList.add("hidden");
+      if (selectedEmployeeNameText) selectedEmployeeNameText.textContent = "None";
+      return;
+    }
+
+    if (selectedEmployeeNameText) selectedEmployeeNameText.textContent = employee.name;
+    if (selectedEmployeeInfo) selectedEmployeeInfo.classList.remove("hidden");
+    resetScheduleForm();
+    scheduleWeekGrid.innerHTML = `<p class="info-box">Choose an employee and week to build a schedule.</p>`;
+    scheduleBuilderWeekTotal.classList.add("hidden");
+  });
+}
 
 timeEditRequests.addEventListener("click", async (event) => {
   const approveBtn = event.target.closest(".approve-request-btn");
@@ -360,9 +384,14 @@ adminScheduleRecords.addEventListener("click", async (event) => {
   if (editBtn) {
     showPage("adminScheduleBuilderPage");
 
-    scheduleEmployeeEmail.value = editBtn.dataset.email || "";
-    scheduleEmployeeName.value = editBtn.dataset.name || "";
-    adminScheduleBuilderWeekPicker.value = adminScheduleWeekPicker.value || getCurrentWeekValue();
+    await loadScheduleEmployeeDropdown();
+    selectScheduleEmployeeByEmail(editBtn.dataset.email || "");
+
+    if (scheduleEmployeeEmail) scheduleEmployeeEmail.value = editBtn.dataset.email || "";
+    if (scheduleEmployeeName) scheduleEmployeeName.value = editBtn.dataset.name || "";
+
+    adminScheduleBuilderWeekPicker.value =
+      adminScheduleWeekPicker.value || getCurrentWeekValue();
 
     await buildScheduleWeekGrid();
 
@@ -856,22 +885,124 @@ async function getTimeOffForEmployee(email) {
   }
 }
 
+
+async function loadScheduleEmployeeDropdown() {
+  if (!scheduleEmployeeSelect) return;
+
+  const currentValue = scheduleEmployeeSelect.value;
+
+  try {
+    const snapshot = await getDocs(collection(db, "employees"));
+    const employees = [];
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      if (!data.email || !data.name) return;
+
+      employees.push({
+        uid: docSnap.id,
+        name: data.name,
+        email: data.email.toLowerCase().trim()
+      });
+    });
+
+    employees.sort((a, b) => a.name.localeCompare(b.name));
+
+    let html = `<option value="">Select an employee</option>`;
+
+    employees.forEach((employee) => {
+      html += `
+        <option
+          value="${escapeHTML(employee.email)}"
+          data-uid="${escapeHTML(employee.uid)}"
+          data-name="${escapeHTML(employee.name)}"
+          data-email="${escapeHTML(employee.email)}"
+        >
+          ${escapeHTML(employee.name)}
+        </option>
+      `;
+    });
+
+    scheduleEmployeeSelect.innerHTML = html;
+
+    if (currentValue) {
+      scheduleEmployeeSelect.value = currentValue;
+      const selectedEmployee = getSelectedScheduleEmployee();
+
+      if (selectedEmployee) {
+        if (selectedEmployeeNameText) selectedEmployeeNameText.textContent = selectedEmployee.name;
+        if (selectedEmployeeInfo) selectedEmployeeInfo.classList.remove("hidden");
+      }
+    }
+  } catch (error) {
+    console.error("Unable to load employees:", error);
+    scheduleEmployeeSelect.innerHTML = `<option value="">Unable to load employees</option>`;
+  }
+}
+
+function getSelectedScheduleEmployee() {
+  if (scheduleEmployeeSelect && scheduleEmployeeSelect.value) {
+    const option = scheduleEmployeeSelect.options[scheduleEmployeeSelect.selectedIndex];
+
+    return {
+      uid: option.dataset.uid || "",
+      name: option.dataset.name || option.textContent.trim(),
+      email: option.dataset.email || scheduleEmployeeSelect.value.toLowerCase().trim()
+    };
+  }
+
+  // Backward-compatible fallback for the old email/name inputs.
+  if (scheduleEmployeeEmail && scheduleEmployeeName) {
+    const email = scheduleEmployeeEmail.value.trim().toLowerCase();
+    const name = scheduleEmployeeName.value.trim();
+
+    if (email && name) {
+      return {
+        uid: "",
+        name,
+        email
+      };
+    }
+  }
+
+  return null;
+}
+
+function selectScheduleEmployeeByEmail(email) {
+  const cleanEmail = String(email || "").toLowerCase().trim();
+
+  if (!cleanEmail) return;
+
+  if (scheduleEmployeeSelect) {
+    scheduleEmployeeSelect.value = cleanEmail;
+
+    const employee = getSelectedScheduleEmployee();
+
+    if (employee) {
+      if (selectedEmployeeNameText) selectedEmployeeNameText.textContent = employee.name;
+      if (selectedEmployeeInfo) selectedEmployeeInfo.classList.remove("hidden");
+    }
+  }
+
+  if (scheduleEmployeeEmail) scheduleEmployeeEmail.value = cleanEmail;
+}
+
 async function buildScheduleWeekGrid() {
   const selectedWeek = adminScheduleBuilderWeekPicker.value;
+  const employee = getSelectedScheduleEmployee();
 
   if (!selectedWeek) {
     alert("Please choose a week first.");
     return;
   }
 
-  const employeeEmail = scheduleEmployeeEmail.value.trim().toLowerCase();
-  const employeeName = scheduleEmployeeName.value.trim();
-
-  if (!employeeEmail || !employeeName) {
-    alert("Enter the employee email and employee name first.");
+  if (!employee) {
+    alert("Please select an employee first.");
     return;
   }
 
+  const employeeEmail = employee.email;
   const { startOfWeek } = getWeekDateRange(selectedWeek);
 
   let approvedOffDates = new Set();
@@ -960,16 +1091,15 @@ async function postEmployeeSchedule() {
   const adminUser = auth.currentUser;
   if (!adminUser) return;
 
-  const employeeEmail = scheduleEmployeeEmail.value.trim().toLowerCase();
-  const employeeName = scheduleEmployeeName.value.trim();
+  const employee = getSelectedScheduleEmployee();
   const dateValue = scheduleDate.value;
   const startTimeValue = scheduleStartTime.value;
   const endTimeValue = scheduleEndTime.value;
   const locationValue = scheduleLocation.value.trim();
   const notesValue = scheduleNotes.value.trim();
 
-  if (!employeeEmail || !employeeName || !dateValue || !startTimeValue || !endTimeValue) {
-    alert("Enter employee email, employee name, choose a day, start time, and end time.");
+  if (!employee || !dateValue || !startTimeValue || !endTimeValue) {
+    alert("Select an employee, choose a day, start time, and end time.");
     return;
   }
 
@@ -979,14 +1109,14 @@ async function postEmployeeSchedule() {
   }
 
   try {
-    const approvedOffDates = await getApprovedTimeOffDates(employeeEmail);
+    const approvedOffDates = await getApprovedTimeOffDates(employee.email);
 
     if (approvedOffDates.has(dateValue)) {
       alert("This employee has approved time off on this day. You cannot schedule them.");
       return;
     }
 
-    const existingShift = await getExistingScheduleForEmployeeDate(employeeEmail, dateValue);
+    const existingShift = await getExistingScheduleForEmployeeDate(employee.email, dateValue);
 
     if (existingShift) {
       alert("This employee is already scheduled on this day. Click the scheduled day to edit it instead.");
@@ -1009,8 +1139,9 @@ async function postEmployeeSchedule() {
     const weekValue = getWeekValueFromDate(scheduleDateObj);
 
     await addDoc(collection(db, "schedules"), {
-      employeeEmail,
-      employeeName,
+      employeeId: employee.uid || "",
+      employeeEmail: employee.email,
+      employeeName: employee.name,
       date: dateValue,
       startTime: startTimeValue,
       endTime: endTimeValue,
@@ -2088,35 +2219,63 @@ function createDayCell(punches) {
 function calculateDailyMinutes(punches) {
   let totalMinutes = 0;
   let workStartTime = null;
-  let lunchStartTime = null;
 
   const sortedPunches = [...punches].sort((a, b) => a.time - b.time);
 
   sortedPunches.forEach((punch) => {
-    if (punch.type === "Clock In") {
+    const type = normalizePunchType(punch.type);
+
+    if (type === "Clock In") {
       workStartTime = punch.time;
-      lunchStartTime = null;
+      return;
     }
 
-    if (punch.type === "Start Lunch" && workStartTime) {
+    if (type === "Start Lunch" && workStartTime) {
       totalMinutes += Math.round((punch.time - workStartTime) / 60000);
       workStartTime = null;
-      lunchStartTime = punch.time;
+      return;
     }
 
-    if (punch.type === "End Lunch" && lunchStartTime) {
+    if (type === "End Lunch") {
       workStartTime = punch.time;
-      lunchStartTime = null;
+      return;
     }
 
-    if (punch.type === "Clock Out" && workStartTime) {
+    if (type === "Clock Out" && workStartTime) {
       totalMinutes += Math.round((punch.time - workStartTime) / 60000);
       workStartTime = null;
-      lunchStartTime = null;
     }
   });
 
-  return totalMinutes;
+  return Math.max(totalMinutes, 0);
+}
+
+function normalizePunchType(type) {
+  const cleanType = String(type || "").trim().toLowerCase();
+
+  if (cleanType === "clock in" || cleanType === "punch in") return "Clock In";
+
+  if (
+    cleanType === "start lunch" ||
+    cleanType === "lunch out" ||
+    cleanType === "punch out for lunch" ||
+    cleanType === "start break"
+  ) {
+    return "Start Lunch";
+  }
+
+  if (
+    cleanType === "end lunch" ||
+    cleanType === "lunch in" ||
+    cleanType === "punch in from lunch" ||
+    cleanType === "end break"
+  ) {
+    return "End Lunch";
+  }
+
+  if (cleanType === "clock out" || cleanType === "punch out") return "Clock Out";
+
+  return type;
 }
 
 function calculateWeeklyMinutes(days) {
@@ -2373,6 +2532,7 @@ onAuthStateChanged(auth, async (user) => {
     await loadMyTimeOffRequests();
 
     if (isCurrentUserAdmin) {
+      await loadScheduleEmployeeDropdown();
       await loadPendingTimeEditRequests();
       await loadPendingTimeOffRequests();
       await loadWeeklySignatures();
