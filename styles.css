@@ -2,6 +2,13 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 :root {
   --blue: #0057c8;
   --blue-dark: #003f9e;
@@ -33,7 +40,6 @@ body {
     radial-gradient(circle at bottom right, rgba(0, 87, 200, 0.25), transparent 34%),
     linear-gradient(135deg, #eef5ff, #f8fbff 48%, #dcecff);
   position: relative;
-  overflow-x: hidden;
 }
 
 body::before {
@@ -58,12 +64,12 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative;
   min-height: 92px;
 }
 
 .logo {
-  width: min(430px, 72vw);
+  width: min(430px, 68vw);
+  max-width: 100%;
   height: auto;
   display: block;
   filter: drop-shadow(0 12px 24px rgba(0, 61, 140, 0.28));
@@ -98,6 +104,7 @@ body::before {
   padding: 18px;
   box-shadow: 18px 0 45px rgba(0, 61, 140, 0.25);
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .side-menu-header {
@@ -130,6 +137,7 @@ body::before {
 .menu-link,
 .menu-logout-btn {
   width: 100%;
+  max-width: 100%;
   text-align: left;
   margin-top: 10px;
   padding: 15px 16px;
@@ -173,13 +181,17 @@ body::before {
 
 .app-shell {
   width: min(1180px, 100%);
+  max-width: 100%;
   margin: 0 auto;
   padding: 18px;
+  overflow-x: hidden;
 }
 
 .app-pages,
 .app-page {
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .auth-card {
@@ -188,6 +200,8 @@ body::before {
 }
 
 .card {
+  width: 100%;
+  max-width: 100%;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -195,6 +209,7 @@ body::before {
   backdrop-filter: blur(10px);
   padding: 28px;
   margin-bottom: 22px;
+  overflow: hidden;
 }
 
 h1,
@@ -242,6 +257,9 @@ button,
 select,
 textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: block;
   padding: 16px;
   margin-top: 14px;
   border-radius: 10px;
@@ -256,6 +274,14 @@ textarea {
   color: var(--text);
   border: 1px solid #b8c7dd;
   outline: none;
+}
+
+input[type="week"],
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
 }
 
 select {
@@ -316,14 +342,17 @@ button.secondary {
   display: flex;
   gap: 8px;
   align-items: center;
+  min-width: 0;
 }
 
 .password-row input {
   flex: 1;
+  min-width: 0;
 }
 
 .show-btn {
   width: 82px;
+  flex: 0 0 82px;
   background: white;
   color: var(--blue-dark);
   border: 1px solid #b8c7dd;
@@ -355,11 +384,14 @@ button.secondary {
 .selected-day-details,
 .schedule-form-box,
 #selectedEmployeeInfo {
+  width: 100%;
+  max-width: 100%;
   margin-top: 20px;
   padding: 20px;
   background: #f6faff;
   border: 1px solid var(--border);
   border-radius: 16px;
+  overflow: hidden;
 }
 
 #selectedEmployeeInfo {
@@ -432,6 +464,8 @@ button.secondary {
   padding: 16px;
   margin-top: 14px;
   box-shadow: 0 10px 26px rgba(0, 61, 140, 0.1);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .timeoff-card {
@@ -496,6 +530,8 @@ button.secondary {
   grid-template-columns: 1fr;
   gap: 22px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
 }
 
 .home-clock-card,
@@ -509,6 +545,7 @@ button.secondary {
   gap: 14px;
   align-items: center;
   margin-top: 24px;
+  max-width: 100%;
 }
 
 .calendar-controls h3 {
@@ -523,8 +560,11 @@ button.secondary {
 }
 
 .employee-week-calendar {
+  width: 100%;
+  max-width: 100%;
   margin-top: 22px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 10px;
   -webkit-overflow-scrolling: touch;
 }
@@ -534,7 +574,8 @@ button.secondary {
   grid-template-columns: repeat(7, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 18px;
-  min-width: 910px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .employee-schedule-day {
@@ -620,8 +661,10 @@ button.secondary {
   gap: 12px;
   margin-top: 20px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 10px;
-  min-width: 980px;
+  width: 100%;
+  max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -870,6 +913,7 @@ button.secondary {
 #myTimeOffRequests {
   max-height: 330px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 8px;
   margin-top: 18px;
   border-top: 1px solid #c9d9ef;
@@ -879,7 +923,6 @@ button.secondary {
 #timeEditRequests,
 #timeOffRequests,
 #adminScheduleRecords,
-#scheduleWeekGrid,
 #adminPunchEditorRecords,
 #weeklySignatures,
 #myHistoryRecords {
@@ -890,6 +933,7 @@ button.secondary {
   text-align: center;
   color: var(--muted);
   margin: 18px 0 30px;
+  padding: 0 12px;
 }
 
 #welcomeText span {
@@ -910,7 +954,7 @@ button.secondary {
   }
 
   .logo {
-    width: min(330px, 68vw);
+    width: min(330px, 62vw);
   }
 
   .app-shell {
@@ -939,19 +983,13 @@ button.secondary {
     white-space: normal;
   }
 
-  .employee-week-calendar {
-    width: 100%;
-    overflow-x: auto;
-  }
-
   .employee-week-grid {
-    grid-template-columns: repeat(7, minmax(118px, 1fr));
-    min-width: 900px;
+    grid-template-columns: repeat(7, 122px);
+    min-width: max-content;
   }
 
   .schedule-week-grid {
-    grid-template-columns: repeat(7, minmax(125px, 1fr));
-    min-width: 960px;
+    grid-template-columns: repeat(7, 128px);
   }
 
   .week-table,
@@ -973,7 +1011,7 @@ button.secondary {
   }
 
   .logo {
-    width: min(260px, 64vw);
+    width: min(255px, 58vw);
   }
 
   .hamburger-btn {
@@ -1011,20 +1049,12 @@ button.secondary {
     gap: 10px;
   }
 
-  .employee-week-calendar,
-  #scheduleWeekGrid {
-    overflow-x: auto;
-    padding-bottom: 10px;
-  }
-
   .employee-week-grid {
-    grid-template-columns: repeat(7, minmax(135px, 1fr));
-    min-width: 1015px;
+    grid-template-columns: repeat(7, 132px);
   }
 
   .schedule-week-grid {
-    grid-template-columns: repeat(7, minmax(140px, 1fr));
-    min-width: 1050px;
+    grid-template-columns: repeat(7, 138px);
   }
 
   .employee-schedule-day,
@@ -1046,6 +1076,18 @@ button.secondary {
 }
 
 @media (max-width: 420px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .logo {
+    width: min(245px, 56vw);
+  }
+
   input,
   button,
   select,
@@ -1055,11 +1097,11 @@ button.secondary {
   }
 
   .employee-week-grid {
-    min-width: 980px;
+    grid-template-columns: repeat(7, 128px);
   }
 
   .schedule-week-grid {
-    min-width: 1020px;
+    grid-template-columns: repeat(7, 132px);
   }
 
   .employee-schedule-day {
