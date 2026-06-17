@@ -172,7 +172,7 @@ body::before {
 }
 
 .app-shell {
-  width: min(1100px, 100%);
+  width: min(1180px, 100%);
   margin: 0 auto;
   padding: 18px;
 }
@@ -524,15 +524,17 @@ button.secondary {
 
 .employee-week-calendar {
   margin-top: 22px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .employee-week-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
   gap: 10px;
   margin-top: 18px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  min-width: 910px;
 }
 
 .employee-schedule-day {
@@ -614,11 +616,13 @@ button.secondary {
 
 .schedule-week-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
   gap: 12px;
   margin-top: 20px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+  min-width: 980px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .schedule-week-grid .info-box {
@@ -910,6 +914,7 @@ button.secondary {
   }
 
   .app-shell {
+    width: 100%;
     padding: 14px;
   }
 
@@ -929,16 +934,24 @@ button.secondary {
     grid-template-columns: 1fr;
   }
 
-  .schedule-week-grid {
-    grid-template-columns: repeat(7, minmax(115px, 1fr));
+  .calendar-controls h3 {
+    order: -1;
+    white-space: normal;
+  }
+
+  .employee-week-calendar {
+    width: 100%;
+    overflow-x: auto;
   }
 
   .employee-week-grid {
-    grid-template-columns: repeat(7, minmax(105px, 1fr));
+    grid-template-columns: repeat(7, minmax(118px, 1fr));
+    min-width: 900px;
   }
 
-  .calendar-controls h3 {
-    order: -1;
+  .schedule-week-grid {
+    grid-template-columns: repeat(7, minmax(125px, 1fr));
+    min-width: 960px;
   }
 
   .week-table,
@@ -949,17 +962,108 @@ button.secondary {
   }
 }
 
+@media (max-width: 700px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .site-header {
+    padding: 14px 10px 6px;
+    min-height: 74px;
+  }
+
+  .logo {
+    width: min(260px, 64vw);
+  }
+
+  .hamburger-btn {
+    top: 12px;
+    left: 10px;
+    width: 46px;
+    height: 46px;
+    font-size: 24px;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  h3 {
+    font-size: 19px;
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    padding: 13px;
+    font-size: 15px;
+  }
+
+  .clock-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .employee-week-calendar,
+  #scheduleWeekGrid {
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+
+  .employee-week-grid {
+    grid-template-columns: repeat(7, minmax(135px, 1fr));
+    min-width: 1015px;
+  }
+
+  .schedule-week-grid {
+    grid-template-columns: repeat(7, minmax(140px, 1fr));
+    min-width: 1050px;
+  }
+
+  .employee-schedule-day,
+  .schedule-day-btn {
+    min-height: 130px;
+  }
+
+  .selected-day-details,
+  .schedule-form-box,
+  .status-card,
+  #selectedEmployeeInfo {
+    padding: 16px;
+  }
+
+  .request-actions,
+  .admin-punch-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 420px) {
   input,
   button,
   select,
   textarea {
     font-size: 15px;
-    padding: 14px;
+    padding: 13px;
+  }
+
+  .employee-week-grid {
+    min-width: 980px;
+  }
+
+  .schedule-week-grid {
+    min-width: 1020px;
   }
 
   .employee-schedule-day {
-    min-height: 105px;
+    min-height: 120px;
   }
 
   .schedule-day-btn {
